@@ -18,6 +18,7 @@ namespace DPP
         public Bitmap Roads;
         public Bitmap PreImg;
         private Bitmap Edges;
+        private Image<Gray, Byte> roads_;
         private Image<Gray, Byte> edges_;
 
         private double MinVal = 60, MaxVal = 90, MaxSat = 20;
@@ -264,10 +265,11 @@ namespace DPP
         //------ Testy -----------------------------
         public void BigerRoads (int it)
         {
-            Image<Gray, Byte> gray = new Image<Gray, Byte>(Roads);
-            Image<Gray, Byte> outImg = new Image<Gray, Byte>(Roads.Size);
-            outImg = gray.Dilate(it);
-            Roads = outImg.Bitmap;
+            Image<Gray, Byte> gr = new Image<Gray, Byte>(Roads);
+            Image<Gray, Byte> outImg_ = new Image<Gray, Byte>(Roads.Size);
+            outImg_ = gr.Dilate(it);
+            Roads = outImg_.Bitmap;
+            roads_ = new Image<Gray, Byte>(Roads);
         }
         
         private int popTr1 = -1, popTr2 = -1;
@@ -285,9 +287,9 @@ namespace DPP
                 popTr2 = tr2;
             }
             LineSegment2D[] lines = HoughLineTests(trH, h1, h2);
-            #region błąd wyznaczonych lini w stosunku do prawidłowych |-> sprawdzić kąt!! jak?
-            Image<Gray, Byte> gray = new Image<Gray, Byte>(Roads);
-            Image<Gray, Byte> white = new Image<Gray, Byte>(Roads.Size);
+            #region błąd wyznaczonych lini w stosunku do prawidłowych 
+            Image<Gray, Byte> gray = roads_.Copy();
+            Image<Gray, Byte> white = roads_.CopyBlank();
             white.SetZero();
             int whitePxs = gray.CountNonzero()[0];
             foreach (LineSegment2D line in lines)
@@ -298,6 +300,13 @@ namespace DPP
             int whitePxs2 = gray.CountNonzero()[0], linePxs = white.CountNonzero()[0];
             result = ((double)(whitePxs - whitePxs2)*100) / (double)linePxs;
             //System.Windows.Forms.MessageBox.Show(whitePxs +" " +whitePxs2 +"\n"+(whitePxs-whitePxs2)*100+" / " + linePxs+" = " + result+"\n" + ((whitePxs - whitePxs2)*100) / linePxs);
+            /*System.Windows.Forms.Form form = new System.Windows.Forms.Form();
+            System.Windows.Forms.PictureBox pictureBox = new System.Windows.Forms.PictureBox();
+            pictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            pictureBox.Image = Roads;
+            pictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            form.Controls.Add(pictureBox);
+            form.ShowDialog();*/
             gray.Dispose();
             white.Dispose();
             #endregion
@@ -325,9 +334,9 @@ namespace DPP
                 popTr2 = tr2;
             }
             LineSegment2D[] lines = HoughLineTests(trH, h1, h2);
-            #region błąd wyznaczonych lini w stosunku do prawidłowych |-> sprawdzić kąt!! jak?
-            Image<Gray, Byte> gray = new Image<Gray, Byte>(Roads);
-            Image<Gray, Byte> white = new Image<Gray, Byte>(Roads.Size);
+            #region błąd wyznaczonych lini w stosunku do prawidłowych 
+            Image<Gray, Byte> gray = roads_.Copy();
+            Image<Gray, Byte> white = roads_.CopyBlank();
             white.SetZero();
             int whitePxs = gray.CountNonzero()[0];
             foreach (LineSegment2D line in lines)
@@ -344,16 +353,16 @@ namespace DPP
             return new double[] { result, lines.GetLength(0) };
         }
         // filtr koloru + krawędzie + Hough
-        public double[] Test3(int rodzaj, int minVal, int maxVal, int maxSat, int trH, double h1, double h2)
+        public double[] Test3(int minVal, int maxVal, int maxSat, int trH, double h1, double h2)
         {
             double result = 0;
             ZnajdzKolorWatki(minVal, maxVal, maxSat);
             
             LineSegment2D[] lines = HoughLineTests(trH, h1, h2);
 
-            #region błąd wyznaczonych lini w stosunku do prawidłowych |-> sprawdzić kąt!! jak?
-            Image<Gray, Byte> gray = new Image<Gray, Byte>(Roads);
-            Image<Gray, Byte> white = new Image<Gray, Byte>(Roads.Size);
+            #region błąd wyznaczonych lini w stosunku do prawidłowych 
+            Image<Gray, Byte> gray = roads_.Copy();
+            Image<Gray, Byte> white = roads_.CopyBlank();
             white.SetZero();
             int whitePxs = gray.CountNonzero()[0];
             foreach (LineSegment2D line in lines)
@@ -363,10 +372,21 @@ namespace DPP
             }
             int whitePxs2 = gray.CountNonzero()[0], linePxs = white.CountNonzero()[0];
             result = ((double)(whitePxs - whitePxs2) * 100) / (double)linePxs;
+            //System.Windows.Forms.MessageBox.Show("\n"+minVal+" "+maxVal+" " +maxSat+" " + trH + " " +h1 + " " + h2+"\n"+whitePxs +" " +whitePxs2 +"\n"+(whitePxs-whitePxs2)*100+" / " + linePxs+" = " + result+"\n" + ((whitePxs - whitePxs2)*100) / linePxs);
+
+            /*System.Windows.Forms.Form form = new System.Windows.Forms.Form();
+            System.Windows.Forms.PictureBox pictureBox = new System.Windows.Forms.PictureBox();
+            pictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            pictureBox.Image = roads_.Bitmap;
+            pictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            form.Controls.Add(pictureBox);
+            form.ShowDialog();*/
+
             gray.Dispose();
             white.Dispose();
             #endregion
             return new double[] { result, lines.GetLength(0) };
+            //return gray.Bitmap;
         }
 
     }

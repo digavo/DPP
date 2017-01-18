@@ -332,8 +332,6 @@ namespace DPP
                 obrazek.BigerRoads(5);
             }
             catch (Exception ex) { MessageBox.Show("Brak obrazka lub wzorca"); return; }
-
-            int index = comboBox1.SelectedIndex;
             int c1 = 60, c2 = 90, c3 = 15, h1 = 20, h2 = 60, h3 = 6;
             double[] delta = { -1, 0 };
             int[] param = { c1, c3 , h1, h2, h3 };
@@ -348,7 +346,8 @@ namespace DPP
                         for (h2 = 20; h2 <= 80; h2 += 15) //5
                             for (h3 = 0; h3 <= 8; h3 += 2) //5
                             {
-                                double[] pom = obrazek.Test3(index, c1, c2, c3, h1, h2, h3);
+                                //pictureBox1.Image = obrazek.Test3(c1, c2, c3, h1, h2, h3);
+                                double[] pom = obrazek.Test3(c1, c2, c3, h1, h2, h3);
                                 if (pom[0] > delta[0])
                                 {
                                     delta = pom;
@@ -356,6 +355,7 @@ namespace DPP
                                 }
                                 File.AppendAllText(fileName, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}",
                                     c1, c3, h1, h2, h3, pom[0], pom[1]) + Environment.NewLine);
+                                  
                             }
 
             numericUpDown10.Value = param[0];
@@ -363,8 +363,6 @@ namespace DPP
             numericUpDown3.Value = param[2];
             numericUpDown4.Value = param[3];
             numericUpDown5.Value = param[4];
-            if (index == 0) button1_Click(sender, e);
-            else button4_Click(sender, e);
             button6_Click(sender, e);
         }
 
