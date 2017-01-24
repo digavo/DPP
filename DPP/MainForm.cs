@@ -93,7 +93,7 @@ namespace DPP
         {
             try
             {
-                pictureBox1.Image = obrazek.BilateralFilter((int)numericUpDown6.Value, (double)numericUpDown7.Value, (double)numericUpDown8.Value);
+                pictureBox1.Image = obrazek.BilateralFilter((int)numericUpDown6.Value, (int)numericUpDown7.Value, (int)numericUpDown8.Value);
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
@@ -154,12 +154,6 @@ namespace DPP
         }
 
 
-        // Filtr bilateralny + Filtr krawędzi + Hough
-        // filtr: f1 [], f2 [], f3 []
-        // Sobel: tr1 [100, 200]
-        // Canny: tr1 [100, 300], tr2 [50, tr1]
-        // Hough: h1 [0, 200], h2[10, 40], h3[0, 10]
-
         // Filtr krawędzi + Hough
         private void button10_Click(object sender, EventArgs e)
         {
@@ -176,36 +170,37 @@ namespace DPP
             int tr1 = 180, tr2 = 100, h1 = 20, h2 = 60, h3 = 6;
             double[] delta = { -1, 0 };
             int[] param = { tr1, tr2, h1, h2, h3 };
-            string fileName = "test1.txt", wynik = (index == 0) ? "Sobel: " : "Canny: ";
+            string fileName1 = "test1_1.txt", fileName2 = "test1_2.txt", wynik = (index == 0) ? "Sobel: " : "Canny: ";
 
             if (index == 0) //Sobel
             {
-                File.AppendAllText(fileName, "Sobel + Hough ---------------" + Environment.NewLine);
-                File.AppendAllText(fileName, "tr1;  h1;  h2;  h3; delta; linie;" + Environment.NewLine);
-                for (tr1 = 100; tr1 <= 200; tr1 += 20)
-                    for (h1 = 20; h1 <= 200; h1 += 20)
-                        for (h2 = 10; h2 <= 40; h2 += 2)
-                            for (h3 = 0; h3 <= 10; h3 += 1)
+                File.AppendAllText(fileName1, "Sobel + Hough ---------------" + Environment.NewLine);
+                File.AppendAllText(fileName1, "tr1;  h1;  h2;  h3; delta; linie;" + Environment.NewLine);
+                for (tr1 = 50; tr1 <= 200; tr1 += 50) //4
+                    for (h1 = 30; h1 <= 150; h1 += 30) //5
+                        for (h2 = 10; h2 <= 70; h2 += 15) //5
+                            for (h3 = 0; h3 <= 8; h3 += 2) //5
                             {
+                                
                                 double[] pom = obrazek.Test1(index, tr1, tr2, h1, h2, h3);
                                 if (pom[0] > delta[0])
                                 {
                                     delta = pom;
                                     param = new int[] { tr1, tr2, h1, h2, h3 };
                                 }
-                                File.AppendAllText(fileName, String.Format("{0}; {1}; {2}; {3}; {4}; {5}",
+                                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}",
                                     tr1, h1, h2, h3, pom[0], pom[1]) + Environment.NewLine);
                             }
             }
             else
             {
-                File.AppendAllText(fileName, "Canny + Hough ---------------" + Environment.NewLine);
-                File.AppendAllText(fileName, "tr1; tr2; h1; h2; h3; | delta; linie;" + Environment.NewLine);
-                for (tr1 = 150; tr1 <= 300; tr1 += 20)
-                    for (tr2 = 100; tr2 <= tr1; tr2 += 10)
-                        for (h1 = 10; h1 <= 200; h1 += 10)
-                            for (h2 = 10; h2 <= 40; h2 += 2)
-                                for (h3 = 0; h3 <= 10; h3 += 1)
+                File.AppendAllText(fileName2, "Canny + Hough ---------------" + Environment.NewLine);
+                File.AppendAllText(fileName2, "tr1; tr2; h1; h2; h3; | delta; linie;" + Environment.NewLine);
+                for (tr1 = 150; tr1 <= 250; tr1 += 25) //5
+                    for (tr2 = 100; tr2 <= tr1; tr2 += 25)
+                        for (h1 = 30; h1 <= 150; h1 += 30) //5
+                            for (h2 = 10; h2 <= 70; h2 += 15) //5
+                                for (h3 = 0; h3 <= 8; h3 += 2) //5
                                 {
                                     double[] pom = obrazek.Test1(index, tr1, tr2, h1, h2, h3);
                                     if (pom[0] > delta[0])
@@ -213,7 +208,7 @@ namespace DPP
                                         delta = pom;
                                         param = new int[] { tr1, tr2, h1, h2, h3 };
                                     }
-                                    File.AppendAllText(fileName, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}",
+                                    File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}",
                                     tr1, tr2, h1, h2, h3, pom[0], pom[1]) + Environment.NewLine);
                                 }
             }
@@ -225,10 +220,6 @@ namespace DPP
             if (index == 0) button1_Click(sender, e);
             else button4_Click(sender, e);
             button6_Click(sender, e);
-            wynik += String.Format("tr1 = {0}, tr2 = {1}, h1 = {2}, h2 = {3}, h3 = {4} | delta = {5}, linie = {6}",
-                param[0], param[1], param[2], param[3], param[4], delta[0], delta[1]);
-            File.AppendAllText(fileName, wynik + Environment.NewLine);
-        
         }
 
         // Filtr bilateralny + Filtr krawędzi + Hough
@@ -253,13 +244,13 @@ namespace DPP
             {
                 File.AppendAllText(fileName1, "filtr b + Sobel + Hough ---------------" + Environment.NewLine);
                 File.AppendAllText(fileName1, "f1; f2; f3; tr1;  h1;  h2;  h3; delta; linie;" + Environment.NewLine);
-                for (f1 = 5; f1 <= 30; f1 += 5) //6
-                    for (f2 = 40; f2 <= 120; f2 += 20) //5
-                        for (f3 = 40; f3 <= 120; f3 += 20) //5
-                            for (tr1 = 100; tr1 <= 200; tr1 += 25) //5
+                for (f1 = 5; f1 <= 35; f1 += 10) //4
+                    for (f2 = 40; f2 <= 120; f2 += 40) //3
+                        for (f3 = 40; f3 <= 120; f3 += 40) //3
+                            for (tr1 = 50; tr1 <= 200; tr1 += 50) //4
                                 for (h1 = 30; h1 <= 150; h1 += 30) //5
-                                    for (h2 = 10; h2 <= 40; h2 += 5) //7
-                                        for (h3 = 2; h3 <= 10; h3 += 2) //5
+                                    for (h2 = 10; h2 <= 70; h2 += 15) //5
+                                        for (h3 = 0; h3 <= 8; h3 += 2) //5
                             {
                                 double[] pom = obrazek.Test2(index, f1, f2, f3,tr1, tr2, h1, h2, h3);
                                 if (pom[0] > delta[0])
@@ -273,33 +264,22 @@ namespace DPP
             }
             else
             {
-                //File.AppendAllText(fileName2, "filtr b + Canny + Hough ---------------" + Environment.NewLine);
-                //File.AppendAllText(fileName2, "f1; f2; f3; tr1; tr2; h1; h2; h3; | delta; linie;" + Environment.NewLine);
-
-                /*for (f1 = 5; f1 <= 35; f1 += 10) //4
-                    for (f2 = 60; f2 <= 120; f2 += 20) //4
-                        for (f3 = 40; f3 <= 120; f3 += 20) //5
-                            for (tr1 = 150; tr1 <= 250; tr1 += 25) //5
-                                for (tr2 = 100; tr2 <= tr1; tr2 += 25)// 4
-                                    for (h1 = 20; h1 <= 140; h1 += 40) //4
-                                        for (h2 = 10; h2 <= 50; h2 += 10) //5
-                                            for (h3 = 1; h3 <= 10; h3 += 3) //4*/
-                int i = 0;
+                File.AppendAllText(fileName2, "filtr b + Canny + Hough ---------------" + Environment.NewLine);
+                File.AppendAllText(fileName2, "f1; f2; f3; tr1; tr2; h1; h2; h3; | delta; linie;" + Environment.NewLine);
                 for (f1 = 5; f1 <= 35; f1 += 10) //4
-                    for (f2 = (i==0)? 100:60; f2 <= 120; f2 += 20) //4
-                        for (f3 = (i==0)?80:40; f3 <= 120; f3 += 20) //5
-                            for (tr1 = (i==0)?250:150; tr1 <= 250; tr1 += 25) //5
-                                for (tr2 = (i == 0) ? 125: 100; tr2 <= tr1; tr2 += 25)// 4
-                                    for (h1 = 20; h1 <= 140; h1 += 40) //4
-                                        for (h2 = 10; h2 <= 50; h2 += 10) //5
-                                            for (h3 = 1; h3 <= 10; h3 += 3) //4
+                    for (f2 = 40; f2 <= 120; f2 += 40) //3
+                        for (f3 = 40; f3 <= 120; f3 += 40) //3
+                            for (tr1 = 150; tr1 <= 250; tr1 += 25) //5
+                                for (tr2 = 100; tr2 <= tr1; tr2 += 25)
+                                    for (h1 = 30; h1 <= 150; h1 += 30) //5
+                                        for (h2 = 10; h2 <= 70; h2 += 15) //5
+                                            for (h3 = 0; h3 <= 8; h3 += 2) //5
                                 {
-                                    i++;
                                     double[] pom = obrazek.Test1(index, tr1, tr2, h1, h2, h3);
                                     if (pom[0] > delta[0])
                                     {
                                         delta = pom;
-                                        param = new int[] { tr1, tr2, h1, h2, h3 };
+                                        param = new int[] { f1, f2, f3, tr1, tr2, h1, h2, h3 };
                                     }
                                     File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}",
                                     f1, f2, f3, tr1, tr2, h1, h2, h3, pom[0], pom[1]) + Environment.NewLine);
@@ -317,7 +297,6 @@ namespace DPP
             if (index == 0) button1_Click(sender, e);
             else button4_Click(sender, e);
             button6_Click(sender, e);
-            File.AppendAllText(fileName1, "---------------" + Environment.NewLine);
             
         }
 

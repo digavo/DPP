@@ -132,8 +132,8 @@ namespace DPP
             Image<Gray, Byte> img = new Image<Gray, Byte>(PreImg);
             UMat edges = new UMat();
             CvInvoke.Laplacian(img, edges, DepthType.Default);
-            //CvInvoke.ConvertScaleAbs(edges, edges, 1, 0);
-            //CvInvoke.Threshold(edges, edges, Threshold, 255, ThresholdType.Binary);
+            CvInvoke.ConvertScaleAbs(edges, edges, 1, 0);
+            CvInvoke.Threshold(edges, edges, 10, 255, ThresholdType.Binary);
             Edges = edges.Bitmap;
             return Edges;
         }
@@ -158,6 +158,7 @@ namespace DPP
                 threshold, //threshold
                 minLineWidth, //min Line width
                 gapSize); //gap between lines
+            edges.Dispose();
             Image<Bgr, Byte> outImage = new Image<Bgr, Byte>(Img).Copy();
             foreach (LineSegment2D line in HLines)
                 outImage.Draw(line, new Bgr(Color.Yellow), 2);
@@ -168,13 +169,6 @@ namespace DPP
             try
             {
                 LineSegment2D[] HLines = edges_.HoughLinesBinary(1, Math.PI / 180.0, threshold, minLineWidth, gapSize)[0];
-                /*LineSegment2D[] HLines = CvInvoke.HoughLinesP(
-                    edges,
-                    1, //Distance resolution in pixel-related units
-                    Math.PI / 180.0, //Angle resolution measured in radians. 45
-                    threshold, //threshold
-                    minLineWidth, //min Line width
-                    gapSize); //gap between lines*/
                 return HLines;
             }
             catch(Exception ex)
@@ -189,7 +183,7 @@ namespace DPP
             Image<Bgr, Byte> outImage = new Image<Bgr, Byte>(gray.ToBitmap());
             Image<Gray, Byte> edges = new Image<Gray, Byte>(Edges);
 
-            #region rectangles and tria
+            #region rectangles
             List<RotatedRect> boxList = new List<RotatedRect>();
             List<RotatedRect> box2List = new List<RotatedRect>();
             List<Triangle2DF> triangleList = new List<Triangle2DF>();
@@ -205,7 +199,7 @@ namespace DPP
                         CvInvoke.ApproxPolyDP(contour, approxContour, CvInvoke.ArcLength(contour, true) * 0.05, true);
                         if (CvInvoke.ContourArea(approxContour, false) > 10) 
                         {
-                            /*if (approxContour.Size == 3)
+                            /*if (approxContour.Size == 3) // triangle
                             {
                                 Point[] pts = approxContour.ToArray();
                                 triangleList.Add(new Triangle2DF(

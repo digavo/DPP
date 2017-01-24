@@ -109,6 +109,12 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Img\sat2.PNG" />
+    <Content Include="Img\sat3.PNG" />
+    <Content Include="Img\sat_kam1.PNG" />
+    <Content Include="Img\sat_kam1_r.PNG" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
