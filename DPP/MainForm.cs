@@ -9,23 +9,22 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
-using Saraff.Tiff;
-using Saraff.Tiff.Core;
 using System.Collections.ObjectModel;
-using BitMiracle.LibTiff.Classic;
 
 namespace DPP
 {
     public partial class MainForm : Form
     {
         private string fileName = "";
-        private Obraz obrazek;
-        private Stream plik;
+        private Obraz ObrazSat;
         public MainForm()
         {
             InitializeComponent();
             comboBox1.SelectedIndex = 0;
+            tabControl1.Enabled = false;
+            buttonSave.Enabled = buttonOrig.Enabled = button13.Enabled = button14.Enabled = button15.Enabled = button16.Enabled = false;
         }
+        // Menu
         private void buttonRead_Click(object sender, EventArgs e)
         {
             OpenFileDialog oknoWyboruPliku = new OpenFileDialog();
@@ -36,29 +35,19 @@ namespace DPP
             oknoWyboruPliku.RestoreDirectory = true;
             if (oknoWyboruPliku.ShowDialog() == DialogResult.OK)
             {
-                if (plik != null) plik.Close();
                 fileName = oknoWyboruPliku.FileName;
-                #region czytanie tiff
+                ObrazSat = new Obraz(fileName);
                 if (fileName.ToLower().Contains("tif") || fileName.ToLower().Contains("tiff"))
-                {
-                    using (Tiff tiff = Tiff.Open(fileName, "r"))
+                    if (!ObrazSat.ReadTiff(fileName))
                     {
-                        int width = tiff.GetField(TiffTag.IMAGEWIDTH)[0].ToInt();
-                        int height = tiff.GetField(TiffTag.IMAGELENGTH)[0].ToInt();
-
-                        byte[] scanline = new byte[tiff.ScanlineSize()];
-                        ushort[] scanline16Bit = new ushort[tiff.ScanlineSize() / 2];
-                        //...
+                        MessageBox.Show("Błąd wczytania pliku, spróbuj ponownie");
+                        tabControl1.Enabled = false;
+                        buttonSave.Enabled = buttonOrig.Enabled = button13.Enabled = button14.Enabled = button15.Enabled = button16.Enabled = false;
+                        return;
                     }
-                    return;
-                }
-                #endregion
-                obrazek = new Obraz();
-                pictureBox0.Image = null;
-                plik = File.Open(fileName, FileMode.Open);
-                obrazek.CzytajObraz(plik);
-                pictureBox0.Image = obrazek.Img;
-                plik.Close();
+                pictureBox0.Image = ObrazSat.InImg;
+                tabControl1.Enabled = true;
+                buttonSave.Enabled = buttonOrig.Enabled = button13.Enabled = button14.Enabled = button15.Enabled = button16.Enabled = true;
             }
         }
         private void buttonSave_Click(object sender, EventArgs e)
@@ -94,27 +83,36 @@ namespace DPP
         {
             try
             {
-                pictureBox1.Image = obrazek.Img;
-                obrazek.PreImg = obrazek.Img;
+                pictureBox1.Image = ObrazSat.InImg;
+                ObrazSat.Reset();
             }
             catch (Exception ex) { MessageBox.Show("Błąd - wczytaj obrazek"); }
         }
-        
+
+        // Menu podglądu
+        private void button13_Click(object sender, EventArgs e)
+        {
+            pictureBox1.Image = ObrazSat.FilterImg;
+        }
+        private void button14_Click(object sender, EventArgs e)
+        {
+            pictureBox1.Image = ObrazSat.EdgesImg;
+        }
+        private void button15_Click(object sender, EventArgs e)
+        {
+            pictureBox1.Image = ObrazSat.EndImg;
+        }
+        private void button16_Click(object sender, EventArgs e)
+        {
+            pictureBox1.Image = ObrazSat.Roads;
+        }
+            
         // Filtr
         private void buttonFilter1_Click(object sender, EventArgs e)
         {
             try
             {
-                pictureBox1.Image = obrazek.BilateralFilter((int)numericUpDown6.Value, (int)numericUpDown7.Value, (int)numericUpDown8.Value);
-            }
-            catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
-        }
-        private void buttonFilter2_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                pictureBox1.Image = obrazek.ZnajdzKolorWatki((double)numericUpDown10.Value, (double)numericUpDown11.Value, (double)numericUpDown9.Value);
-
+                pictureBox1.Image = ObrazSat.BilateralFilter((int)numericUpDown6.Value, (int)numericUpDown7.Value, (int)numericUpDown8.Value);
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
@@ -122,8 +120,15 @@ namespace DPP
         {
             try
             {
-                pictureBox1.Image = obrazek.ZnajdzKolorWatki2((double)numericUpDown10.Value, (double)numericUpDown11.Value, (double)numericUpDown9.Value);
-
+                pictureBox1.Image = ObrazSat.ColorFilter2((int)numericUpDown10.Value, (int)numericUpDown11.Value, (int)numericUpDown9.Value);
+            }
+            catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
+        }
+        private void buttonFilter2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                pictureBox1.Image = ObrazSat.ColorFilter((int)numericUpDown10.Value, (int)numericUpDown11.Value, (int)numericUpDown9.Value);
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
@@ -133,7 +138,7 @@ namespace DPP
         {
             try
             {
-                pictureBox1.Image = obrazek.Sobel((double)numericUpDown1.Value);
+                pictureBox1.Image = ObrazSat.Sobel((double)numericUpDown1.Value);
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
@@ -141,7 +146,7 @@ namespace DPP
         {
             try
             {
-                pictureBox1.Image = obrazek.Laplacian((double)numericUpDown1.Value);
+                pictureBox1.Image = ObrazSat.Laplacian((double)numericUpDown1.Value);
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
@@ -149,7 +154,7 @@ namespace DPP
         {
             try
             {
-                pictureBox1.Image = obrazek.Canny((double)numericUpDown1.Value, (double)numericUpDown2.Value);
+                pictureBox1.Image = ObrazSat.Canny((double)numericUpDown1.Value, (double)numericUpDown2.Value);
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
@@ -159,7 +164,7 @@ namespace DPP
         {
             try
             {
-                pictureBox1.Image = obrazek.HoughLine((int)numericUpDown3.Value, (double)numericUpDown4.Value, (double)numericUpDown5.Value);
+                pictureBox1.Image = ObrazSat.HoughLine((int)numericUpDown3.Value, (double)numericUpDown4.Value, (double)numericUpDown5.Value);
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
@@ -167,22 +172,29 @@ namespace DPP
         {
             try
             {
-                pictureBox1.Image = obrazek.FindContours();
+                pictureBox1.Image = ObrazSat.FindContours();
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
-        
-        // Filtr krawędzi + Hough
-        private void button10_Click(object sender, EventArgs e)
+
+        // metoda pikseli centralnych
+        private void button11_Click(object sender, EventArgs e)
         {
             try
             {
-                string scr = fileName.Insert(fileName.LastIndexOf('.'), "_r");
-                plik = File.Open(scr, FileMode.Open);
-                obrazek.Roads = new Bitmap(plik);
-                obrazek.BigerRoads(5);
+                pictureBox1.Image = ObrazSat.metod1();
             }
-            catch (Exception ex) { MessageBox.Show("Brak obrazka lub wzorca"); return; }
+            catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
+        }
+
+        // Filtr krawędzi + Hough
+        private void button10_Click(object sender, EventArgs e)
+        {
+            if (!ObrazSat.BigerRoads((int)numericUpDown12.Value))
+            {
+                MessageBox.Show("Brak wzorca dla danego obrazu");
+                return;
+            }
             
             int index = comboBox1.SelectedIndex;
             int tr1 = 180, tr2 = 100, h1 = 20, h2 = 60, h3 = 6;
@@ -200,7 +212,7 @@ namespace DPP
                             for (h3 = 0; h3 <= 8; h3 += 2) //5
                             {
                                 
-                                double[] pom = obrazek.Test1(index, tr1, tr2, h1, h2, h3);
+                                double[] pom = ObrazSat.Test1(index, tr1, tr2, h1, h2, h3);
                                 if (pom[0] > delta[0])
                                 {
                                     delta = pom;
@@ -220,7 +232,7 @@ namespace DPP
                             for (h2 = 10; h2 <= 70; h2 += 15) //5
                                 for (h3 = 0; h3 <= 8; h3 += 2) //5
                                 {
-                                    double[] pom = obrazek.Test1(index, tr1, tr2, h1, h2, h3);
+                                    double[] pom = ObrazSat.Test1(index, tr1, tr2, h1, h2, h3);
                                     if (pom[0] > delta[0])
                                     {
                                         delta = pom;
@@ -243,14 +255,11 @@ namespace DPP
         // Filtr bilateralny + Filtr krawędzi + Hough
         private void button9_Click(object sender, EventArgs e)
         {
-            try
+            if (!ObrazSat.BigerRoads((int)numericUpDown12.Value))
             {
-                string scr = fileName.Insert(fileName.LastIndexOf('.'), "_r");
-                plik = File.Open(scr, FileMode.Open);
-                obrazek.Roads = new Bitmap(plik);
-                obrazek.BigerRoads(5);
+                MessageBox.Show("Brak wzorca dla danego obrazu");
+                return;
             }
-            catch (Exception ex) { MessageBox.Show("Brak obrazka lub wzorca"); return; }
             
             int index = comboBox1.SelectedIndex;
             int f1 = 15, f2 = 80, f3 = 80, tr1 = 180, tr2 = 100, h1 = 20, h2 = 60, h3 = 6;
@@ -270,7 +279,7 @@ namespace DPP
                                     for (h2 = 10; h2 <= 70; h2 += 15) //5
                                         for (h3 = 0; h3 <= 8; h3 += 2) //5
                             {
-                                double[] pom = obrazek.Test2(index, f1, f2, f3,tr1, tr2, h1, h2, h3);
+                                double[] pom = ObrazSat.Test2(index, f1, f2, f3,tr1, tr2, h1, h2, h3);
                                 if (pom[0] > delta[0])
                                 {
                                     delta = pom;
@@ -293,7 +302,7 @@ namespace DPP
                                         for (h2 = 10; h2 <= 70; h2 += 15) //5
                                             for (h3 = 0; h3 <= 8; h3 += 2) //5
                                 {
-                                    double[] pom = obrazek.Test1(index, tr1, tr2, h1, h2, h3);
+                                    double[] pom = ObrazSat.Test1(index, tr1, tr2, h1, h2, h3);
                                     if (pom[0] > delta[0])
                                     {
                                         delta = pom;
@@ -315,20 +324,16 @@ namespace DPP
             if (index == 0) buttonSobel_Click(sender, e);
             else buttonCanny_Click(sender, e);
             buttonHough_Click(sender, e);
-            
         }
 
         // Filtr koloru + Hough
         private void button8_Click(object sender, EventArgs e)
         {
-            try
+            if (!ObrazSat.BigerRoads((int)numericUpDown12.Value))
             {
-                string scr = this.fileName.Insert(this.fileName.LastIndexOf('.'), "_r");
-                plik = File.Open(scr, FileMode.Open);
-                obrazek.Roads = new Bitmap(plik);
-                obrazek.BigerRoads(5);
+                MessageBox.Show("Brak wzorca dla danego obrazu");
+                return;
             }
-            catch (Exception ex) { MessageBox.Show("Brak obrazka lub wzorca"); return; }
             int c1 = 60, c2 = 90, c3 = 15, h1 = 20, h2 = 60, h3 = 6;
             double[] delta = { -1, 0 };
             int[] param = { c1, c3 , h1, h2, h3 };
@@ -336,7 +341,6 @@ namespace DPP
             
             File.AppendAllText(fileName, "kolor + Hough ---------------" + Environment.NewLine);
             File.AppendAllText(fileName, "c1; c3;  h1;  h2;  h3; com; cor; q; linie;" + Environment.NewLine);
-            h1 = 20;
             for (c1 = 60; c1 <= 70; c1 += 5) //3
                 for (c3 = 15; c3 <= 25; c3 += 5) //3
                     //for (h1 = 30; h1 <= 150; h1 += 30) //5
@@ -344,7 +348,7 @@ namespace DPP
                             for (h3 = 0; h3 <= 8; h3 += 2) //5
                             {
                                 //pictureBox1.Image = obrazek.Test3(c1, c2, c3, h1, h2, h3);
-                                double[] pom = obrazek.Test3(c1, c2, c3, h1, h2, h3);
+                                double[] pom = ObrazSat.Test3(c1, c2, c3, h1, h2, h3);
                                 if (pom[0] > delta[0])
                                 {
                                     delta = pom;
@@ -353,22 +357,13 @@ namespace DPP
                                 File.AppendAllText(fileName, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}",
                                     c1, c3, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
                             }
-            numericUpDown10.Value = param[0];
+            /*numericUpDown10.Value = param[0];
             numericUpDown9.Value = param[1];
             numericUpDown3.Value = param[2];
             numericUpDown4.Value = param[3];
             numericUpDown5.Value = param[4];
-            buttonHough_Click(sender, e);
-        }
-
-        // metoda pikseli centralnych
-        private void button11_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                pictureBox1.Image = obrazek.metod1();
-            }
-            catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
+            buttonHough_Click(sender, e);*/
+            ObrazSat.Reset();
         }
 
     }

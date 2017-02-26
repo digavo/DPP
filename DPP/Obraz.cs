@@ -10,23 +10,118 @@ using Emgu.CV.Structure;
 using Emgu.CV.Util;
 using Emgu.CV.CvEnum;
 using System.Linq;
+using BitMiracle.LibTiff.Classic;
 
 namespace DPP
 {
     class Obraz
     {
-        public Bitmap Img;
-        public Bitmap Roads;
-        public Bitmap PreImg;
-        private Bitmap Edges;
+        private Image<Bgr, Byte> inImg;
+        private Image<Bgr, Byte> filterImg;
+        private Image<Gray, Byte> edgesImg;
+        private Image<Bgr, Byte> endImg;
+        private Image<Gray, Byte> roads;
+        private bool roadsExist;
+
         private Image<Gray, Byte> roads_;
         private Image<Gray, Byte> edges_;
 
-        private double MinVal = 60, MaxVal = 90, MaxSat = 20;
-        public void CzytajObraz(Stream str)
+        public Obraz(string fileName)
         {
-            Img = new Bitmap(str);
-            PreImg = Img;
+            if (fileName.ToLower().Contains("tif") || fileName.ToLower().Contains("tiff"))
+                inImg = new Image<Bgr, byte>(1,1);
+            else inImg = new Image<Bgr, byte>(fileName);
+            
+            filterImg = new Image<Bgr, byte>(inImg.Size);
+            filterImg = inImg.Clone();
+            edgesImg = new Image<Gray, byte>(inImg.Size);
+            endImg = new Image<Bgr, byte>(inImg.Size);
+            
+            string scr = fileName.Insert(fileName.LastIndexOf('.'), "_r");
+            if (File.Exists(scr))
+            {
+                roads = new Image<Gray, byte>(scr);
+                roads_ = roads.Clone();
+                roadsExist = true;
+            }
+            else
+            {
+                roads = new Image<Gray, byte>(inImg.Size);
+                roadsExist = false;
+            }
+        }
+        public bool ReadTiff(string fileName)
+        {
+            Bitmap result;
+            using (Tiff tif = Tiff.Open(fileName, "r"))
+            {
+                FieldValue[] res = tif.GetField(TiffTag.IMAGELENGTH);
+                int height = res[0].ToInt();
+
+                res = tif.GetField(TiffTag.IMAGEWIDTH);
+                int width = res[0].ToInt();
+
+                res = tif.GetField(TiffTag.BITSPERSAMPLE);
+                short bpp = res[0].ToShort();
+                if (bpp != 16)
+                    return false;
+
+                res = tif.GetField(TiffTag.SAMPLESPERPIXEL);
+                short spp = res[0].ToShort();
+                if (spp != 1)
+                    return false;
+
+                res = tif.GetField(TiffTag.PHOTOMETRIC);
+                Photometric photo = (Photometric)res[0].ToInt();
+                if (photo != Photometric.MINISBLACK && photo != Photometric.MINISWHITE)
+                    return false;
+
+                int stride = tif.ScanlineSize();
+                byte[] buffer = new byte[stride];
+
+                result = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
+                byte[] buffer8Bit = null;
+
+                for (int i = 0; i < height; i++)
+                {
+                    Rectangle imgRect = new Rectangle(0, i, width, 1);
+                    BitmapData imgData = result.LockBits(imgRect, ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
+
+                    if (buffer8Bit == null)
+                        buffer8Bit = new byte[imgData.Stride];
+                    else
+                        Array.Clear(buffer8Bit, 0, buffer8Bit.Length);
+                    tif.ReadScanline(buffer, i);
+                    convertBuffer(buffer, buffer8Bit);
+                    Marshal.Copy(buffer8Bit, 0, imgData.Scan0, buffer8Bit.Length);
+                    result.UnlockBits(imgData);
+                }
+            }
+            try { inImg = new Image<Bgr, byte>(result);}
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString() + " \n\n" + ex.Message + "\n\n" + ex.InnerException);
+            }
+            return true;
+        }
+
+        public Bitmap InImg { get { return inImg.Bitmap; } }
+        public Bitmap FilterImg { get { return filterImg.Bitmap; } }
+        public Bitmap EdgesImg { get { return edgesImg.Bitmap; } }
+        public Bitmap EndImg { get { return endImg.Bitmap; } }
+        public Bitmap Roads { get { return roads.Bitmap; } }
+        public void Reset()
+        {
+            filterImg = inImg.Clone();
+        }
+        private static void convertBuffer(byte[] buffer, byte[] buffer8Bit)
+        {
+            for (int src = 0, dst = 0; src < buffer.Length; dst++)
+            {
+                int value16 = buffer[src++];
+                value16 = value16 + (buffer[src++] << 8);
+                buffer8Bit[dst] = (byte)(value16 / 257.0 + 0.5);
+            }
         }
         private void RGBtoHSV(int r, int g, int b, out float Hue, out float Val, out float Sat)
         {
@@ -47,26 +142,8 @@ namespace DPP
             if (cmax == 0) Sat = 0;
             else Sat = (delta * 100) / cmax;
             Val = (100 * cmax) / 255;
-            //System.Windows.Forms.MessageBox.Show("r:" + r + " g:" + g + " b:" + b + "\nR:" + R + " G:" + G + " B:" + B + "\nH:" + Hue + " V:" + Val + " Sa:" + Sat);
         }
-        private void ZnajdzKolor(byte[] tab, int x1, int y1, int x2, int y2, int width, int depth) 
-        {
-            for (int i = x1; i < x2; i++)
-            {
-                for (int j = y1; j < y2; j++)
-                {
-                    int offset = ((j * width) + i) * depth;
-                    float hue, sat, val;
-                    RGBtoHSV(tab[offset + 2], tab[offset + 1], tab[offset + 0], out hue, out val, out sat);
-                    int a = (int)(MaxSat / (100 - MaxVal)), b = (int)(-MaxVal * a);
-                    if (val > MinVal && sat < MaxSat && sat > (int)(a * val + b))
-                        tab[offset + 2] = tab[offset + 1] = tab[offset + 0] = (byte)255;
-                    else
-                        tab[offset + 2] = tab[offset + 1] = tab[offset + 0] = (byte)0;
-                }
-            }
-        }
-        private void ZnajdzKolor2(byte[] tab, int x1, int y1, int x2, int y2, int width, int depth)
+        private void RemoveColor(byte[] tab, int x1, int y1, int x2, int y2, int width, int depth, int MinVal, int MaxVal, int MaxSat)
         {
             for (int i = x1; i < x2; i++)
             {
@@ -82,64 +159,58 @@ namespace DPP
             }
         }
 
-        //------ Podstawowe -----------------------
+        //------ Filtry -----------------------
         public Bitmap BilateralFilter(int d = 15, double sColor = 80, double sSpace = 80)
         {
-            Image<Bgr, Byte> img = new Image<Bgr, Byte>(Img);
             UMat outImg = new UMat();
-            CvInvoke.BilateralFilter(img, outImg, d, sColor, sSpace);
-            PreImg = outImg.Bitmap;
-            img.Dispose();
+            CvInvoke.BilateralFilter(inImg, outImg, d, sColor, sSpace);
+            filterImg = outImg.ToImage<Bgr, Byte>();
             return outImg.Bitmap;
         }
-        public Bitmap ZnajdzKolorWatki(double minVal, double maxVal, double maxSat) 
+        public Bitmap ColorFilter(int minVal, int maxVal, int maxSat)
         {
-            MinVal = minVal; MaxVal = maxVal; MaxSat = maxSat;
-            Bitmap newImg = new Bitmap(Img);
-            Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
-            BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat); 
-            int depth = Bitmap.GetPixelFormatSize(data.PixelFormat) / 8; 
-            byte[] buffer = new byte[data.Width * data.Height * depth];
-            Marshal.Copy(data.Scan0, buffer, 0, buffer.Length); 
-            Parallel.Invoke(
-                () => { ZnajdzKolor(buffer, 0, 0, data.Width / 2, data.Height / 2, data.Width, depth); }, //top left
-                () => { ZnajdzKolor(buffer, data.Width / 2, 0, data.Width, data.Height / 2, data.Width, depth); }, //top - right
-                () => { ZnajdzKolor(buffer, 0, data.Height / 2, data.Width / 2, data.Height, data.Width, depth); }, //bottom - left
-                () => { ZnajdzKolor(buffer, data.Width / 2, data.Height / 2, data.Width, data.Height, data.Width, depth); }  //bottom - right
-            );
-            Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
-            newImg.UnlockBits(data);
-            PreImg = newImg;
-            Edges = newImg;
-            edges_ = new Image<Gray, Byte>(Edges);
-            return newImg;
-        }
-        public Bitmap ZnajdzKolorWatki2(double minVal, double maxVal, double maxSat)
-        {
-            MinVal = minVal; MaxVal = maxVal; MaxSat = maxSat;
-            Bitmap newImg = new Bitmap(Img);
+            Bitmap newImg = inImg.Clone().Bitmap;
             Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
             BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
             int depth = Bitmap.GetPixelFormatSize(data.PixelFormat) / 8;
             byte[] buffer = new byte[data.Width * data.Height * depth];
             Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
             Parallel.Invoke(
-                () => { ZnajdzKolor2(buffer, 0, 0, data.Width / 2, data.Height / 2, data.Width, depth); }, //top left
-                () => { ZnajdzKolor2(buffer, data.Width / 2, 0, data.Width, data.Height / 2, data.Width, depth); }, //top - right
-                () => { ZnajdzKolor2(buffer, 0, data.Height / 2, data.Width / 2, data.Height, data.Width, depth); }, //bottom - left
-                () => { ZnajdzKolor2(buffer, data.Width / 2, data.Height / 2, data.Width, data.Height, data.Width, depth); }  //bottom - right
+                () => { RemoveColor(buffer, 0, 0, data.Width / 2, data.Height / 2, data.Width, depth, minVal, maxVal, maxSat); }, //top left
+                () => { RemoveColor(buffer, data.Width / 2, 0, data.Width, data.Height / 2, data.Width, depth, minVal, maxVal, maxSat); }, //top - right
+                () => { RemoveColor(buffer, 0, data.Height / 2, data.Width / 2, data.Height, data.Width, depth, minVal, maxVal, maxSat); }, //bottom - left
+                () => { RemoveColor(buffer, data.Width / 2, data.Height / 2, data.Width, data.Height, data.Width, depth, minVal, maxVal, maxSat); }  //bottom - right
             );
             Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
             newImg.UnlockBits(data);
-            PreImg = newImg;
-            Edges = newImg;
-            edges_ = new Image<Gray, Byte>(Edges);
+            filterImg = new Image<Bgr, byte>(newImg);
+            //edges_ = new Image<Gray, byte>(newImg);
             return newImg;
         }
+        public Bitmap ColorFilter2(int minVal, int maxVal, int maxSat)
+        {
+            ColorFilter(minVal, maxVal, maxSat);
+            filterImg = filterImg.Convert<Bgr, byte>().ThresholdBinary(new Bgr(0,0,0), new Bgr(255,255,255));
+            edges_ = filterImg.Convert<Gray,byte>();
+            return filterImg.Bitmap;
+        }
+
         //------ Krawędzie -------------------------
+        public Bitmap Laplacian(double Threshold)
+        {
+            Image<Gray, byte> img = filterImg.Convert<Gray, byte>();
+            UMat edges = new UMat();
+            CvInvoke.Laplacian(img, edges, DepthType.Default);
+            CvInvoke.ConvertScaleAbs(edges, edges, 1, 0);
+            CvInvoke.Threshold(edges, edges, 10, 255, ThresholdType.Binary);
+            edgesImg = edges.ToImage<Gray, byte>(); ;
+            edges_ = edgesImg.Clone();
+            edges.Dispose();
+            return edgesImg.Bitmap;
+        }
         public Bitmap Sobel(double Threshold)
         {
-            Image<Gray, Byte> img = new Image<Gray, Byte>(PreImg);
+            Image<Gray, byte> img = filterImg.Convert<Gray, byte>();
             Image<Gray, float> edges_x = img.Sobel(1, 0, 3);
             Image<Gray, float> edges_y = img.Sobel(0, 1, 3);
             UMat abs_x = new UMat(), abs_y = new UMat(), grad = new UMat();
@@ -147,50 +218,42 @@ namespace DPP
             CvInvoke.ConvertScaleAbs(edges_y, abs_y, 1, 0);
             CvInvoke.AddWeighted(abs_x, 0.5, abs_y, 0.5, 0, grad);
             CvInvoke.Threshold(grad, grad, Threshold, 255, ThresholdType.Binary);
-            Edges = grad.Bitmap;
-            edges_ = new Image<Gray, Byte>(Edges);
+            edgesImg = grad.ToImage<Gray, byte>();
+            edges_ = edgesImg.Clone();
             grad.Dispose();
             img.Dispose();
             edges_x.Dispose();
             edges_y.Dispose();
-            return Edges;
-        }
-        public Bitmap Laplacian(double Threshold)
-        {
-            Image<Gray, Byte> img = new Image<Gray, Byte>(PreImg);
-            UMat edges = new UMat();
-            CvInvoke.Laplacian(img, edges, DepthType.Default);
-            CvInvoke.ConvertScaleAbs(edges, edges, 1, 0);
-            CvInvoke.Threshold(edges, edges, 10, 255, ThresholdType.Binary);
-            Edges = edges.Bitmap;
-            return Edges;
+            return edgesImg.Bitmap;
         }
         public Bitmap Canny(double Threshold, double ThresholdLinking)
         {
-            Image<Gray, Byte> img = new Image<Gray, Byte>(PreImg);
+            Image<Gray, byte> img = filterImg.Convert<Gray, byte>();
             UMat edges = new UMat();
             CvInvoke.Canny(img, edges, Threshold, ThresholdLinking,3,true);
-            Edges = edges.Bitmap;
-            edges_ = new Image<Gray, Byte>(Edges);
-            return Edges;
-        }
+            edgesImg = edges.ToImage<Gray, byte>();
+            edges_ = edgesImg.Clone();
+            edges.Dispose();
+            return edgesImg.Bitmap;
+        } 
 
         //------ Linie i prostokąty ----------------
         public Bitmap HoughLine(int threshold, double minLineWidth, double gapSize)
         {
-            Image<Gray, Byte> edges = new Image<Gray, Byte>(Edges);
             LineSegment2D[] HLines = CvInvoke.HoughLinesP(
-                edges,
+                edgesImg,
                 1, //Distance resolution in pixel-related units
                 Math.PI / 180.0, //Angle resolution measured in radians. 45
                 threshold, //threshold
                 minLineWidth, //min Line width
                 gapSize); //gap between lines
-            edges.Dispose();
-            Image<Bgr, Byte> outImage = new Image<Bgr, Byte>(Img).Copy();
-            foreach (LineSegment2D line in HLines)
-                outImage.Draw(line, new Bgr(Color.Yellow), 2);
-            return outImage.ToBitmap();
+            using (Image<Bgr, Byte> outImg = inImg.Clone())
+            {
+                foreach (LineSegment2D line in HLines)
+                    outImg.Draw(line, new Bgr(Color.Yellow), 2);
+                endImg = outImg.Clone();
+            }
+            return endImg.Bitmap;
         }
         public LineSegment2D[] HoughLineTests(int threshold, double minLineWidth, double gapSize)
         {
@@ -202,23 +265,18 @@ namespace DPP
             catch(Exception ex)
             {
                 System.Windows.Forms.MessageBox.Show("hough" + ex.ToString());
-                return null;
+                return new LineSegment2D[0];
             }
         }
         public Bitmap FindContours()
         {
-            Image<Gray, Byte> gray= new Image<Gray, Byte>(Img);
-            Image<Bgr, Byte> outImage = new Image<Bgr, Byte>(gray.ToBitmap());
-            Image<Gray, Byte> edges = new Image<Gray, Byte>(Edges);
-
-            #region rectangles
+            Image<Bgr, Byte> outImg = inImg.Clone();
             List<RotatedRect> boxList = new List<RotatedRect>();
             List<RotatedRect> box2List = new List<RotatedRect>();
             List<Triangle2DF> triangleList = new List<Triangle2DF>();
-
             using (VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint())
             {
-                CvInvoke.FindContours(edges, contours, null, RetrType.List, ChainApproxMethod.ChainApproxSimple); 
+                CvInvoke.FindContours(edgesImg.Clone(), contours, null, RetrType.List, ChainApproxMethod.ChainApproxSimple); 
                 for (int i = 0; i < contours.Size; i++)
                 {
                     using (VectorOfPoint contour = contours[i])
@@ -227,16 +285,16 @@ namespace DPP
                         CvInvoke.ApproxPolyDP(contour, approxContour, CvInvoke.ArcLength(contour, true) * 0.05, true);
                         if (CvInvoke.ContourArea(approxContour, false) > 10) 
                         {
-                            /*if (approxContour.Size == 3) // triangle
+                            if (approxContour.Size == 3) // triangle
                             {
                                 Point[] pts = approxContour.ToArray();
                                 triangleList.Add(new Triangle2DF(
-                                   pts[0],
-                                   pts[1],
-                                   pts[2]
-                                   ));
+                                    pts[0],
+                                    pts[1],
+                                    pts[2]
+                                    ));
                             }
-                            else*/
+                            else
                             if (approxContour.Size == 4) 
                             {
                                 bool isRectangle = true;
@@ -245,7 +303,7 @@ namespace DPP
                                 for (int j = 0; j < edg.Length; j++)
                                 {
                                     double angle = Math.Abs(
-                                       edg[(j + 1) % edg.Length].GetExteriorAngleDegree(edg[j]));
+                                        edg[(j + 1) % edg.Length].GetExteriorAngleDegree(edg[j]));
                                     if (angle < 60 || angle > 120)
                                     {
                                         isRectangle = false;
@@ -262,7 +320,7 @@ namespace DPP
                                 for (int j = 0; j < edg.Length; j++)
                                 {
                                     double angle = Math.Abs(
-                                       edg[(j + 1) % edg.Length].GetExteriorAngleDegree(edg[j]));
+                                        edg[(j + 1) % edg.Length].GetExteriorAngleDegree(edg[j]));
                                     if (angle < 50 || angle > 130)
                                     {
                                         isRectangle = false;
@@ -275,29 +333,166 @@ namespace DPP
                     }
                 }
             }
-            #endregion
             foreach (RotatedRect box in boxList)
-                outImage.Draw(box, new Bgr(Color.Red), 2);
+                outImg.Draw(box, new Bgr(Color.Red), 1);
             foreach (RotatedRect box in box2List)
-                outImage.Draw(box, new Bgr(Color.Blue), 2);
+                outImg.Draw(box, new Bgr(Color.Blue), 1);
+            foreach (Triangle2DF tr in triangleList)
+                outImg.Draw(tr, new Bgr(Color.Yellow), 1);
+            endImg = outImg.Clone();
+            outImg.Dispose();
+            return endImg.Bitmap;
+        }
 
-            return outImage.ToBitmap();
+        //------ Metoda 1 --------------------------
+        private void metod1Wątek(byte[] tab, int x1, int y1, int x2, int y2, int width, int depth) // canny 80, 50
+        {
+            int[,] pom = new int[x2, y2];
+
+            #region okręgi referencyjne
+            pom[0, 0] = 0;
+            for (int i = x1 + 1; i < x2; i++)
+                if (tab[i * depth] == 255)
+                    pom[i, 0] = 0;
+                else pom[i, 0] = pom[i - 1, 0] + 1;
+
+            for (int i = y1 + 1; i < y2; i++)
+                if (tab[((i * width)) * depth] == 255)
+                    pom[0, i] = 0;
+                else pom[0, i] = pom[0, i - 1] + 1;
+
+            for (int i = x1 + 1; i < x2; i++)
+            {
+                for (int j = y1 + 1; j < y2; j++)
+                {
+                    int k = ((j * width) + i) * depth;
+
+                    if (tab[k] == 255)
+                    {
+                        pom[i, j] = 0;
+                        tab[k] = tab[k + 1] = tab[k + 2] = (byte)0;
+                        continue;
+                    }
+                    int m = Math.Min(pom[i - 1, j], pom[i, j - 1]);
+                    m = Math.Min(m, pom[i - 1, j - 1]);
+                    if (j + 1 < y2) m = Math.Min(m, pom[i - 1, j + 1]);
+                    m++;
+                    pom[i, j] = m;
+                    tab[k] = tab[k + 1] = tab[k + 2] = (byte)(Math.Min(25 * m, 255));
+                }
+            }
+            for (int i = x2 - 2; i > x1; i--)
+            {
+                for (int j = y2 - 2; j > y1; j--)
+                {
+                    int k = ((j * width) + i) * depth;
+
+                    int m = Math.Min(pom[i + 1, j], pom[i, j + 1]);
+                    m = Math.Min(m, pom[i + 1, j + 1]);
+                    if (j - 1 > y1) m = Math.Min(m, pom[i + 1, j - 1]);
+                    m = Math.Min(m, pom[i, j] - 1);
+                    m++;
+                    pom[i, j] = m;
+                    tab[k] = tab[k + 1] = tab[k + 2] = (byte)(Math.Min(25 * m, 255));
+
+                }
+            }
+            #endregion
+
+            #region piksele centralne
+            for (int i = x1 + 1; i < x2 - 1; i++)
+            {
+                for (int j = y1 + 1; j < y2 - 1; j++)
+                {
+                    int k = ((j * width) + i) * depth;
+                    tab[k] = tab[k + 1] = tab[k + 2] = 0;
+                    List<int> pom2 = new List<int> { pom[i, j], pom[i, j - 1], pom[i, j + 1], pom[i - 1, j], pom[i - 1, j - 1], pom[i - 1, j + 1], pom[i + 1, j], pom[i + 1, j - 1], pom[i + 1, j + 1],
+                    };//pom[i, j + 2], pom[i + 1, j + 2], pom[i - 1, j + 2], pom[i, j - 2], pom[i + 1, j - 2], pom[i - 1, j - 2],
+                    //pom[i - 2, j], pom[i - 2, j - 1],pom[i - 2, j - 2], pom[i - 2, j + 1],pom[i - 2, j + 2],
+                    //pom[i + 2, j], pom[i + 2, j - 1],pom[i + 2, j - 2], pom[i + 2, j + 1],pom[i + 2, j + 2]};
+                    int m = pom2.Max();
+                    if (pom[i, j] == m && m > 1 && m < 10)
+                    {
+                        tab[k] = tab[k + 1] = tab[k + 2] = 255;
+                        pom[i, j] = m * 100;
+                    }
+                }
+            }
+            #endregion
+
+            #region segmentacja
+            int p = 12;
+            for (int i = x1; i < x2; i += p)
+            {
+                for (int j = y1; j < y2; j += p)
+                {
+                    List<int> pom2 = new List<int>();
+                    int pi = p, pj = p;
+                    if (i + p >= x2 || j + p >= y2)
+                    {
+                        pi = x2 - i;
+                        pj = y2 - j;
+                    }
+                    for (int ii = i; ii < i + pi; ii++)
+                        for (int jj = j; jj < j + pj; jj++)
+                            pom2.Add(pom[ii, jj]);
+
+                    int m = pom2.Max();
+                    for (int ii = i; ii < i + pi; ii++)
+                        for (int jj = j; jj < j + pj; jj++)
+                            if (pom[ii, jj] < m)
+                            {
+                                int k = ((jj * width) + ii) * depth;
+                                tab[k] = tab[k + 1] = tab[k + 2] = 0;
+                            }
+                    /*int m = pom2.Count(x => x > 100);
+                    if (m < 4)
+                    {
+                        for (int ii = i; ii < i + pi; ii++)
+                        {
+                            for (int jj = j; jj < j + pj; jj++)
+                            {
+                                int k = ((jj * width) + ii) * depth;
+                                tab[k] = tab[k + 1] = tab[k + 2] = 0;
+                            }
+                        }
+                    }*/
+
+                }
+            }
+            #endregion
+
+        }
+        public Bitmap metod1() //okręgi
+        {
+            Bitmap newImg = new Bitmap(edgesImg.Bitmap);
+            Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
+            BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
+            int depth = Bitmap.GetPixelFormatSize(data.PixelFormat) / 8;
+            byte[] buffer = new byte[data.Width * data.Height * depth];
+            Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
+            Parallel.Invoke(
+                () => { metod1Wątek(buffer, 0, 0, data.Width, data.Height, data.Width, depth); }
+            );
+            Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
+            newImg.UnlockBits(data);
+            endImg = new Image<Bgr, byte>(newImg);
+            return newImg;
         }
         
         //------ Testy -----------------------------
-        public void BigerRoads (int it)
+        public bool BigerRoads (int it)
         {
-            Image<Gray, Byte> gr = new Image<Gray, Byte>(Roads);
-            Image<Gray, Byte> outImg_ = new Image<Gray, Byte>(Roads.Size);
-            outImg_ = gr.Dilate(it);
-            Roads = outImg_.Bitmap;
-            roads_ = new Image<Gray, Byte>(Roads);
+            if (!roadsExist) return false;
+            roads_ = roads.Dilate(it);
+            return true;
         }
-        
+
         private int popTr1 = -1, popTr2 = -1;
         // krawędzie + Hough
         public double[] Test1 (int rodzaj, int tr1, int tr2, int trH, int h1, int h2)
         {
+            if (!roadsExist) return new double[] { 0 };
             if (popTr1 != tr1 || popTr2 != tr2)
             {
                 if (rodzaj == 0)
@@ -339,13 +534,14 @@ namespace DPP
         // filtr bilateralny + krawędzie + Hough
         public double[] Test2(int rodzaj, int d, int color, int space, int tr1, int tr2, int trH, int h1, int h2)
         {
+            if (!roadsExist) return new double[] { 0 };
             double result = 0;
             if (popD != d || popColor != color || popSpace != space)
             {
                 BilateralFilter(d, color, space);
                 popD = d; popColor = color; popSpace = space;
             }
-            
+
             if (popTr1 != tr1 || popTr2 != tr2)
             {
                 if (rodzaj == 0)
@@ -374,10 +570,12 @@ namespace DPP
             #endregion
             return new double[] { result, lines.GetLength(0) };
         }
+
         // filtr koloru + krawędzie + Hough
         public double[] Test3(int minVal, int maxVal, int maxSat, int trH, double h1, double h2)
         {
-            ZnajdzKolorWatki(minVal, maxVal, maxSat);
+            if (!roadsExist) return new double[] { 0 };
+            ColorFilter2(minVal, maxVal, maxSat);
             LineSegment2D[] lines = HoughLineTests(trH, h1, h2);
 
             #region wyznaczenie miar jakości
@@ -386,7 +584,7 @@ namespace DPP
             int TP = 0, FP = 0, FN = 0;
             Image<Gray, Byte> refImg = roads_.Copy();
             Image<Gray, Byte> outImg = roads_.CopyBlank();
-            outImg.SetZero(); 
+            outImg.SetZero();
             TP = refImg.CountNonzero()[0];
             foreach (LineSegment2D line in lines)
             {
@@ -397,151 +595,13 @@ namespace DPP
             TP = TP - FN;
             FP = outImg.CountNonzero()[0] - TP;
             int whitePxs2 = refImg.CountNonzero()[0], linePxs = outImg.CountNonzero()[0];
-            com = 100*(double)TP / (double)(TP + FP);
-            cor = 100*(double)TP / (double)(TP + FN);
-            q = 100*(double)TP / (double)(TP + FP + FN);
+            com = 100 * (double)TP / (double)(TP + FP);
+            cor = 100 * (double)TP / (double)(TP + FN);
+            q = 100 * (double)TP / (double)(TP + FP + FN);
             refImg.Dispose();
             outImg.Dispose();
             #endregion
             return new double[] { com, cor, q, lines.GetLength(0) };
-        }
-
-        private void metod1Wątek(byte[] tab, int x1, int y1, int x2, int y2, int width, int depth) // canny 80, 50
-        {
-            int[,] pom = new int[x2, y2];
-
-            #region okręgi referencyjne
-            pom[0, 0] = 0;
-            for (int i = x1 + 1; i < x2; i++)
-                if (tab[i * depth] == 255)
-                    pom[i, 0] = 0;
-                else pom[i, 0] = pom[i - 1, 0] + 1;
-            
-            for (int i = y1 + 1; i < y2; i++)
-                if (tab[((i * width)) * depth] == 255)
-                    pom[0, i] = 0;
-                else pom[0, i] = pom[0, i - 1] + 1;
-            
-            for (int i = x1 + 1; i < x2; i++) 
-            {
-                for (int j = y1 + 1; j < y2; j++) 
-                {
-                    int k = ((j * width) + i) * depth;
-
-                    if (tab[k] == 255)
-                    {
-                        pom[i, j] = 0;
-                        tab[k] = tab[k + 1] = tab[k + 2] = (byte)0;
-                        continue;
-                    }
-                    int m = Math.Min(pom[i - 1, j], pom[i, j - 1]);
-                    m = Math.Min(m, pom[i - 1, j - 1]);
-                    if (j + 1 < y2) m = Math.Min(m, pom[i - 1, j + 1]);
-                    m++;
-                    pom[i, j] = m;
-                    tab[k] = tab[k + 1] = tab[k + 2] = (byte)(Math.Min(25 * m,255));
-                }
-            }
-            for (int i = x2 - 2; i > x1; i--) 
-            {
-                for (int j = y2 - 2; j > y1; j--) 
-                {
-                    int k = ((j * width) + i) * depth;
-
-                    int m = Math.Min(pom[i + 1, j], pom[i, j + 1]);
-                    m = Math.Min(m, pom[i + 1, j + 1]);
-                    if (j - 1 > y1) m = Math.Min(m, pom[i + 1, j - 1]);
-                    m = Math.Min(m, pom[i, j] - 1);
-                    m++;
-                    pom[i, j] = m;
-                    tab[k] = tab[k + 1] = tab[k + 2] = (byte)(Math.Min(25 * m, 255));
-
-                }
-            }
-            #endregion
-            
-            #region piksele centralne
-            for (int i = x1 + 1; i < x2 - 1; i++)
-            {
-                for (int j = y1 + 1; j < y2 - 1; j++)
-                {
-                    int k = ((j * width) + i) * depth;
-                    tab[k] = tab[k + 1] = tab[k + 2] = 0;
-                    List<int> pom2 = new List<int> { pom[i, j], pom[i, j - 1], pom[i, j + 1], pom[i - 1, j], pom[i - 1, j - 1], pom[i - 1, j + 1], pom[i + 1, j], pom[i + 1, j - 1], pom[i + 1, j + 1],
-                    };//pom[i, j + 2], pom[i + 1, j + 2], pom[i - 1, j + 2], pom[i, j - 2], pom[i + 1, j - 2], pom[i - 1, j - 2],
-                    //pom[i - 2, j], pom[i - 2, j - 1],pom[i - 2, j - 2], pom[i - 2, j + 1],pom[i - 2, j + 2],
-                    //pom[i + 2, j], pom[i + 2, j - 1],pom[i + 2, j - 2], pom[i + 2, j + 1],pom[i + 2, j + 2]};
-                    int m = pom2.Max();
-                    if (pom[i, j] == m && m > 1 && m < 10)
-                    {
-                        tab[k] = tab[k + 1] = tab[k + 2] = 255;
-                        pom[i, j] = m * 100;
-                    }
-                }
-            }
-            #endregion
-
-            #region segmentacja
-            int p = 12;
-            for (int i = x1; i < x2; i += p)
-            {
-                for (int j = y1; j < y2; j += p)
-                {
-                    List<int> pom2 = new List<int>();
-                    int pi = p, pj = p;
-                    if (i + p >= x2 || j + p >= y2)
-                    {
-                        pi = x2 - i;
-                        pj = y2 - j;
-                    }
-                    for (int ii = i; ii < i + pi; ii++) 
-                        for (int jj = j; jj < j + pj; jj++)
-                            pom2.Add(pom[ii,jj]);
-
-                    int m = pom2.Max();
-                    for (int ii = i; ii < i + pi; ii++)
-                        for (int jj = j; jj < j + pj; jj++)
-                            if (pom[ii, jj] < m)
-                            {
-                                int k = ((jj * width) + ii) * depth;
-                                tab[k] = tab[k + 1] = tab[k + 2] = 0;
-                            }
-                    /*int m = pom2.Count(x => x > 100);
-                    if (m < 4)
-                    {
-                        for (int ii = i; ii < i + pi; ii++)
-                        {
-                            for (int jj = j; jj < j + pj; jj++)
-                            {
-                                int k = ((jj * width) + ii) * depth;
-                                tab[k] = tab[k + 1] = tab[k + 2] = 0;
-                            }
-                        }
-                    }*/
-
-                }
-            }
-            #endregion
-            
-        }
-
-        public Bitmap metod1() //okręgi
-        {
-            Image<Gray, Byte> edges = new Image<Gray, byte>(Edges);
-            Bitmap newImg = new Bitmap(Edges);
-            Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
-            BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
-            int depth = Bitmap.GetPixelFormatSize(data.PixelFormat)/ 8;
-            byte[] buffer = new byte[data.Width * data.Height * depth];
-            Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
-            Parallel.Invoke(
-                () => { metod1Wątek(buffer, 0, 0, data.Width, data.Height, data.Width, depth); } 
-            );
-            Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
-            newImg.UnlockBits(data);
-
-            Edges = newImg;
-            return Edges;
         }
     }
 }
