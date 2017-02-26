@@ -32,6 +32,7 @@
             this.button1 = new System.Windows.Forms.Button();
             this.buttonSave = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.button11 = new System.Windows.Forms.Button();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.label9 = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
@@ -68,6 +69,7 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.pictureBox0 = new System.Windows.Forms.PictureBox();
             this.panel2 = new System.Windows.Forms.Panel();
@@ -75,6 +77,7 @@
             this.button8 = new System.Windows.Forms.Button();
             this.button9 = new System.Windows.Forms.Button();
             this.button10 = new System.Windows.Forms.Button();
+            this.button12 = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.groupBox5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).BeginInit();
@@ -111,13 +114,13 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(116, 47);
+            this.button1.Location = new System.Drawing.Point(121, 42);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(94, 23);
             this.button1.TabIndex = 6;
             this.button1.Text = "Sobel";
             this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.button1.Click += new System.EventHandler(this.buttonSobel_Click);
             // 
             // buttonSave
             // 
@@ -134,6 +137,7 @@
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.button11);
             this.groupBox1.Controls.Add(this.groupBox5);
             this.groupBox1.Controls.Add(this.groupBox4);
             this.groupBox1.Controls.Add(this.button5);
@@ -145,8 +149,19 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Opcje";
             // 
+            // button11
+            // 
+            this.button11.Location = new System.Drawing.Point(247, 236);
+            this.button11.Name = "button11";
+            this.button11.Size = new System.Drawing.Size(78, 23);
+            this.button11.TabIndex = 28;
+            this.button11.Text = "---";
+            this.button11.UseVisualStyleBackColor = true;
+            this.button11.Click += new System.EventHandler(this.button11_Click);
+            // 
             // groupBox5
             // 
+            this.groupBox5.Controls.Add(this.button12);
             this.groupBox5.Controls.Add(this.label9);
             this.groupBox5.Controls.Add(this.label10);
             this.groupBox5.Controls.Add(this.label11);
@@ -163,7 +178,7 @@
             this.groupBox5.Controls.Add(this.numericUpDown7);
             this.groupBox5.Location = new System.Drawing.Point(9, 19);
             this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(221, 135);
+            this.groupBox5.Size = new System.Drawing.Size(221, 146);
             this.groupBox5.TabIndex = 27;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "Filtry";
@@ -275,13 +290,13 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(6, 100);
+            this.button3.Location = new System.Drawing.Point(6, 94);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(94, 23);
             this.button3.TabIndex = 4;
             this.button3.Text = "Filtr bilateralny";
             this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
+            this.button3.Click += new System.EventHandler(this.buttonFilter1_Click);
             // 
             // numericUpDown8
             // 
@@ -324,13 +339,13 @@
             // 
             // button7
             // 
-            this.button7.Location = new System.Drawing.Point(121, 99);
+            this.button7.Location = new System.Drawing.Point(121, 94);
             this.button7.Name = "button7";
             this.button7.Size = new System.Drawing.Size(94, 23);
             this.button7.TabIndex = 14;
-            this.button7.Text = "Kolor";
+            this.button7.Text = "Kolor zostaw";
             this.button7.UseVisualStyleBackColor = true;
-            this.button7.Click += new System.EventHandler(this.button7_Click);
+            this.button7.Click += new System.EventHandler(this.buttonFilter2_Click);
             // 
             // numericUpDown7
             // 
@@ -358,9 +373,9 @@
             this.groupBox4.Controls.Add(this.button4);
             this.groupBox4.Controls.Add(this.numericUpDown1);
             this.groupBox4.Controls.Add(this.numericUpDown2);
-            this.groupBox4.Location = new System.Drawing.Point(9, 160);
+            this.groupBox4.Location = new System.Drawing.Point(9, 171);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(221, 108);
+            this.groupBox4.Size = new System.Drawing.Size(221, 103);
             this.groupBox4.TabIndex = 5;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Krawędzie";
@@ -368,7 +383,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(6, 47);
+            this.label5.Location = new System.Drawing.Point(6, 45);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(25, 13);
             this.label5.TabIndex = 23;
@@ -377,7 +392,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(6, 25);
+            this.label4.Location = new System.Drawing.Point(6, 23);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(25, 13);
             this.label4.TabIndex = 22;
@@ -385,24 +400,24 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(116, 18);
+            this.button2.Location = new System.Drawing.Point(121, 13);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(94, 23);
             this.button2.TabIndex = 5;
             this.button2.Text = "Laplace";
             this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            this.button2.Click += new System.EventHandler(this.buttonLapl_Click);
             // 
             // button4
             // 
-            this.button4.Location = new System.Drawing.Point(116, 75);
+            this.button4.Location = new System.Drawing.Point(121, 70);
             this.button4.Margin = new System.Windows.Forms.Padding(2);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(94, 23);
             this.button4.TabIndex = 7;
             this.button4.Text = "Canny";
             this.button4.UseVisualStyleBackColor = true;
-            this.button4.Click += new System.EventHandler(this.button4_Click);
+            this.button4.Click += new System.EventHandler(this.buttonCanny_Click);
             // 
             // numericUpDown1
             // 
@@ -412,7 +427,7 @@
             0,
             0,
             0});
-            this.numericUpDown1.Location = new System.Drawing.Point(47, 19);
+            this.numericUpDown1.Location = new System.Drawing.Point(47, 17);
             this.numericUpDown1.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -435,7 +450,7 @@
             0,
             0,
             0});
-            this.numericUpDown2.Location = new System.Drawing.Point(47, 45);
+            this.numericUpDown2.Location = new System.Drawing.Point(47, 43);
             this.numericUpDown2.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -458,7 +473,7 @@
             this.button5.TabIndex = 15;
             this.button5.Text = "Prostokąty";
             this.button5.UseVisualStyleBackColor = true;
-            this.button5.Click += new System.EventHandler(this.button5_Click);
+            this.button5.Click += new System.EventHandler(this.buttonContours_Click);
             // 
             // groupBox7
             // 
@@ -507,7 +522,7 @@
             this.button6.TabIndex = 13;
             this.button6.Text = "Hough";
             this.button6.UseVisualStyleBackColor = true;
-            this.button6.Click += new System.EventHandler(this.button6_Click);
+            this.button6.Click += new System.EventHandler(this.buttonHough_Click);
             // 
             // numericUpDown4
             // 
@@ -627,6 +642,7 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Controls.Add(this.panel1, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.richTextBox1, 2, 0);
             this.tableLayoutPanel1.Controls.Add(this.groupBox2, 0, 1);
             this.tableLayoutPanel1.Controls.Add(this.groupBox1, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.groupBox3, 1, 1);
@@ -650,6 +666,14 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(311, 34);
             this.panel1.TabIndex = 18;
+            // 
+            // richTextBox1
+            // 
+            this.richTextBox1.Location = new System.Drawing.Point(711, 3);
+            this.richTextBox1.Name = "richTextBox1";
+            this.richTextBox1.Size = new System.Drawing.Size(169, 34);
+            this.richTextBox1.TabIndex = 102;
+            this.richTextBox1.Text = "";
             // 
             // groupBox2
             // 
@@ -726,6 +750,16 @@
             this.button10.Text = "Test 1";
             this.button10.UseVisualStyleBackColor = true;
             this.button10.Click += new System.EventHandler(this.button10_Click);
+            // 
+            // button12
+            // 
+            this.button12.Location = new System.Drawing.Point(121, 117);
+            this.button12.Name = "button12";
+            this.button12.Size = new System.Drawing.Size(94, 23);
+            this.button12.TabIndex = 36;
+            this.button12.Text = "Kolor usuń";
+            this.button12.UseVisualStyleBackColor = true;
+            this.button12.Click += new System.EventHandler(this.buttonFilter3_Click);
             // 
             // MainForm
             // 
@@ -814,6 +848,9 @@
         private System.Windows.Forms.NumericUpDown numericUpDown9;
         private System.Windows.Forms.NumericUpDown numericUpDown10;
         private System.Windows.Forms.NumericUpDown numericUpDown11;
+        private System.Windows.Forms.RichTextBox richTextBox1;
+        private System.Windows.Forms.Button button11;
+        private System.Windows.Forms.Button button12;
     }
 }
 

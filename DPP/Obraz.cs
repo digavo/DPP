@@ -9,6 +9,7 @@ using Emgu.CV;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
 using Emgu.CV.CvEnum;
+using System.Linq;
 
 namespace DPP
 {
@@ -59,21 +60,27 @@ namespace DPP
                     RGBtoHSV(tab[offset + 2], tab[offset + 1], tab[offset + 0], out hue, out val, out sat);
                     int a = (int)(MaxSat / (100 - MaxVal)), b = (int)(-MaxVal * a);
                     if (val > MinVal && sat < MaxSat && sat > (int)(a * val + b))
-                    {
-                        tab[offset + 2] = (byte)255;
-                        tab[offset + 1] = (byte)255;
-                        tab[offset + 0] = (byte)255;
-                    }
+                        tab[offset + 2] = tab[offset + 1] = tab[offset + 0] = (byte)255;
                     else
-                    {
-                        tab[offset + 2] = (byte)0;
-                        tab[offset + 1] = (byte)0;
-                        tab[offset + 0] = (byte)0;
-                    }
+                        tab[offset + 2] = tab[offset + 1] = tab[offset + 0] = (byte)0;
                 }
             }
         }
-        
+        private void ZnajdzKolor2(byte[] tab, int x1, int y1, int x2, int y2, int width, int depth)
+        {
+            for (int i = x1; i < x2; i++)
+            {
+                for (int j = y1; j < y2; j++)
+                {
+                    int offset = ((j * width) + i) * depth;
+                    float hue, sat, val;
+                    RGBtoHSV(tab[offset + 2], tab[offset + 1], tab[offset + 0], out hue, out val, out sat);
+                    int a = (int)(MaxSat / (100 - MaxVal)), b = (int)(-MaxVal * a);
+                    if (!(val > MinVal && sat < MaxSat && sat > (int)(a * val + b)))
+                        tab[offset + 2] = tab[offset + 1] = tab[offset + 0] = (byte)0;
+                }
+            }
+        }
 
         //------ Podstawowe -----------------------
         public Bitmap BilateralFilter(int d = 15, double sColor = 80, double sSpace = 80)
@@ -107,7 +114,28 @@ namespace DPP
             edges_ = new Image<Gray, Byte>(Edges);
             return newImg;
         }
-
+        public Bitmap ZnajdzKolorWatki2(double minVal, double maxVal, double maxSat)
+        {
+            MinVal = minVal; MaxVal = maxVal; MaxSat = maxSat;
+            Bitmap newImg = new Bitmap(Img);
+            Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
+            BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
+            int depth = Bitmap.GetPixelFormatSize(data.PixelFormat) / 8;
+            byte[] buffer = new byte[data.Width * data.Height * depth];
+            Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
+            Parallel.Invoke(
+                () => { ZnajdzKolor2(buffer, 0, 0, data.Width / 2, data.Height / 2, data.Width, depth); }, //top left
+                () => { ZnajdzKolor2(buffer, data.Width / 2, 0, data.Width, data.Height / 2, data.Width, depth); }, //top - right
+                () => { ZnajdzKolor2(buffer, 0, data.Height / 2, data.Width / 2, data.Height, data.Width, depth); }, //bottom - left
+                () => { ZnajdzKolor2(buffer, data.Width / 2, data.Height / 2, data.Width, data.Height, data.Width, depth); }  //bottom - right
+            );
+            Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
+            newImg.UnlockBits(data);
+            PreImg = newImg;
+            Edges = newImg;
+            edges_ = new Image<Gray, Byte>(Edges);
+            return newImg;
+        }
         //------ Krawędzie -------------------------
         public Bitmap Sobel(double Threshold)
         {
@@ -270,7 +298,6 @@ namespace DPP
         // krawędzie + Hough
         public double[] Test1 (int rodzaj, int tr1, int tr2, int trH, int h1, int h2)
         {
-            double result = 0;
             if (popTr1 != tr1 || popTr2 != tr2)
             {
                 if (rodzaj == 0)
@@ -281,7 +308,8 @@ namespace DPP
                 popTr2 = tr2;
             }
             LineSegment2D[] lines = HoughLineTests(trH, h1, h2);
-            #region błąd wyznaczonych lini w stosunku do prawidłowych 
+            #region wyznaczenie miar jakości
+            double result = 0;
             Image<Gray, Byte> gray = roads_.Copy();
             Image<Gray, Byte> white = roads_.CopyBlank();
             white.SetZero();
@@ -349,72 +377,171 @@ namespace DPP
         // filtr koloru + krawędzie + Hough
         public double[] Test3(int minVal, int maxVal, int maxSat, int trH, double h1, double h2)
         {
-            double result = 0;
             ZnajdzKolorWatki(minVal, maxVal, maxSat);
-            
             LineSegment2D[] lines = HoughLineTests(trH, h1, h2);
 
-            #region błąd wyznaczonych lini w stosunku do prawidłowych 
-            Image<Gray, Byte> gray = roads_.Copy();
-            Image<Gray, Byte> white = roads_.CopyBlank();
-            white.SetZero();
-            int whitePxs = gray.CountNonzero()[0];
+            #region wyznaczenie miar jakości
+            //TP - poprawnie wykryte, FP - niepoprawnie wykryte, FN - niewykryte (powinny być wykryte)
+            double com = 0, cor = 0, q = 0;
+            int TP = 0, FP = 0, FN = 0;
+            Image<Gray, Byte> refImg = roads_.Copy();
+            Image<Gray, Byte> outImg = roads_.CopyBlank();
+            outImg.SetZero(); 
+            TP = refImg.CountNonzero()[0];
             foreach (LineSegment2D line in lines)
             {
-                gray.Draw(line, new Gray(0), 1);
-                white.Draw(line, new Gray(255), 1);
+                refImg.Draw(line, new Gray(0), 1); // białe drogi poprawne - znalezione, pozostałe biało = FN
+                outImg.Draw(line, new Gray(255), 1); // czarny obraz, białe znalezione linie
             }
-            int whitePxs2 = gray.CountNonzero()[0], linePxs = white.CountNonzero()[0];
-            result = ((double)(whitePxs - whitePxs2) * 100) / (double)linePxs;
-            //System.Windows.Forms.MessageBox.Show("\n"+minVal+" "+maxVal+" " +maxSat+" " + trH + " " +h1 + " " + h2+"\n"+whitePxs +" " +whitePxs2 +"\n"+(whitePxs-whitePxs2)*100+" / " + linePxs+" = " + result+"\n" + ((whitePxs - whitePxs2)*100) / linePxs);
-
-            /*System.Windows.Forms.Form form = new System.Windows.Forms.Form();
-            System.Windows.Forms.PictureBox pictureBox = new System.Windows.Forms.PictureBox();
-            pictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            pictureBox.Image = roads_.Bitmap;
-            pictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
-            form.Controls.Add(pictureBox);
-            form.ShowDialog();*/
-
-            gray.Dispose();
-            white.Dispose();
+            FN = refImg.CountNonzero()[0];
+            TP = TP - FN;
+            FP = outImg.CountNonzero()[0] - TP;
+            int whitePxs2 = refImg.CountNonzero()[0], linePxs = outImg.CountNonzero()[0];
+            com = 100*(double)TP / (double)(TP + FP);
+            cor = 100*(double)TP / (double)(TP + FN);
+            q = 100*(double)TP / (double)(TP + FP + FN);
+            refImg.Dispose();
+            outImg.Dispose();
             #endregion
-            return new double[] { result, lines.GetLength(0) };
-            //return gray.Bitmap;
+            return new double[] { com, cor, q, lines.GetLength(0) };
         }
 
+        private void metod1Wątek(byte[] tab, int x1, int y1, int x2, int y2, int width, int depth) // canny 80, 50
+        {
+            int[,] pom = new int[x2, y2];
+
+            #region okręgi referencyjne
+            pom[0, 0] = 0;
+            for (int i = x1 + 1; i < x2; i++)
+                if (tab[i * depth] == 255)
+                    pom[i, 0] = 0;
+                else pom[i, 0] = pom[i - 1, 0] + 1;
+            
+            for (int i = y1 + 1; i < y2; i++)
+                if (tab[((i * width)) * depth] == 255)
+                    pom[0, i] = 0;
+                else pom[0, i] = pom[0, i - 1] + 1;
+            
+            for (int i = x1 + 1; i < x2; i++) 
+            {
+                for (int j = y1 + 1; j < y2; j++) 
+                {
+                    int k = ((j * width) + i) * depth;
+
+                    if (tab[k] == 255)
+                    {
+                        pom[i, j] = 0;
+                        tab[k] = tab[k + 1] = tab[k + 2] = (byte)0;
+                        continue;
+                    }
+                    int m = Math.Min(pom[i - 1, j], pom[i, j - 1]);
+                    m = Math.Min(m, pom[i - 1, j - 1]);
+                    if (j + 1 < y2) m = Math.Min(m, pom[i - 1, j + 1]);
+                    m++;
+                    pom[i, j] = m;
+                    tab[k] = tab[k + 1] = tab[k + 2] = (byte)(Math.Min(25 * m,255));
+                }
+            }
+            for (int i = x2 - 2; i > x1; i--) 
+            {
+                for (int j = y2 - 2; j > y1; j--) 
+                {
+                    int k = ((j * width) + i) * depth;
+
+                    int m = Math.Min(pom[i + 1, j], pom[i, j + 1]);
+                    m = Math.Min(m, pom[i + 1, j + 1]);
+                    if (j - 1 > y1) m = Math.Min(m, pom[i + 1, j - 1]);
+                    m = Math.Min(m, pom[i, j] - 1);
+                    m++;
+                    pom[i, j] = m;
+                    tab[k] = tab[k + 1] = tab[k + 2] = (byte)(Math.Min(25 * m, 255));
+
+                }
+            }
+            #endregion
+            
+            #region piksele centralne
+            for (int i = x1 + 1; i < x2 - 1; i++)
+            {
+                for (int j = y1 + 1; j < y2 - 1; j++)
+                {
+                    int k = ((j * width) + i) * depth;
+                    tab[k] = tab[k + 1] = tab[k + 2] = 0;
+                    List<int> pom2 = new List<int> { pom[i, j], pom[i, j - 1], pom[i, j + 1], pom[i - 1, j], pom[i - 1, j - 1], pom[i - 1, j + 1], pom[i + 1, j], pom[i + 1, j - 1], pom[i + 1, j + 1],
+                    };//pom[i, j + 2], pom[i + 1, j + 2], pom[i - 1, j + 2], pom[i, j - 2], pom[i + 1, j - 2], pom[i - 1, j - 2],
+                    //pom[i - 2, j], pom[i - 2, j - 1],pom[i - 2, j - 2], pom[i - 2, j + 1],pom[i - 2, j + 2],
+                    //pom[i + 2, j], pom[i + 2, j - 1],pom[i + 2, j - 2], pom[i + 2, j + 1],pom[i + 2, j + 2]};
+                    int m = pom2.Max();
+                    if (pom[i, j] == m && m > 1 && m < 10)
+                    {
+                        tab[k] = tab[k + 1] = tab[k + 2] = 255;
+                        pom[i, j] = m * 100;
+                    }
+                }
+            }
+            #endregion
+
+            #region segmentacja
+            int p = 12;
+            for (int i = x1; i < x2; i += p)
+            {
+                for (int j = y1; j < y2; j += p)
+                {
+                    List<int> pom2 = new List<int>();
+                    int pi = p, pj = p;
+                    if (i + p >= x2 || j + p >= y2)
+                    {
+                        pi = x2 - i;
+                        pj = y2 - j;
+                    }
+                    for (int ii = i; ii < i + pi; ii++) 
+                        for (int jj = j; jj < j + pj; jj++)
+                            pom2.Add(pom[ii,jj]);
+
+                    int m = pom2.Max();
+                    for (int ii = i; ii < i + pi; ii++)
+                        for (int jj = j; jj < j + pj; jj++)
+                            if (pom[ii, jj] < m)
+                            {
+                                int k = ((jj * width) + ii) * depth;
+                                tab[k] = tab[k + 1] = tab[k + 2] = 0;
+                            }
+                    /*int m = pom2.Count(x => x > 100);
+                    if (m < 4)
+                    {
+                        for (int ii = i; ii < i + pi; ii++)
+                        {
+                            for (int jj = j; jj < j + pj; jj++)
+                            {
+                                int k = ((jj * width) + ii) * depth;
+                                tab[k] = tab[k + 1] = tab[k + 2] = 0;
+                            }
+                        }
+                    }*/
+
+                }
+            }
+            #endregion
+            
+        }
+
+        public Bitmap metod1() //okręgi
+        {
+            Image<Gray, Byte> edges = new Image<Gray, byte>(Edges);
+            Bitmap newImg = new Bitmap(Edges);
+            Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
+            BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
+            int depth = Bitmap.GetPixelFormatSize(data.PixelFormat)/ 8;
+            byte[] buffer = new byte[data.Width * data.Height * depth];
+            Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
+            Parallel.Invoke(
+                () => { metod1Wątek(buffer, 0, 0, data.Width, data.Height, data.Width, depth); } 
+            );
+            Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
+            newImg.UnlockBits(data);
+
+            Edges = newImg;
+            return Edges;
+        }
     }
 }
-/*
- * Image<Gray, Byte> edges = new Image<Gray, Byte>(Edges);
-           VectorOfPointF lines = new VectorOfPointF();
-           CvInvoke.HoughLines(
-               edges,
-               lines,
-               1, //Distance resolution in pixel-related units
-               Math.PI / 45.0, //Angle resolution measured in radians.
-               threshold); //threshold
-           var linesList = new List<LineSegment2D>();
-           for (var i = 0; i < lines.Size; i++)
-           {
-               var rho = lines[i].X;
-               var theta = lines[i].Y;
-               var pt1 = new Point();
-               var pt2 = new Point();
-               var a = Math.Cos(theta);
-               var b = Math.Sin(theta);
-               var x0 = a * rho;
-               var y0 = b * rho;
-               pt1.X = (int)Math.Round(x0 + edges.Width * (-b));
-               pt1.Y = (int)Math.Round(y0 + edges.Height * (a));
-               pt2.X = (int)Math.Round(x0 - edges.Width * (-b));
-               pt2.Y = (int)Math.Round(y0 - edges.Height * (a));
-
-               linesList.Add(new LineSegment2D(pt1, pt2));
-           }
-
-           Image<Bgr, Byte> outImage = new Image<Bgr, Byte>(Img).Copy();
-           foreach (LineSegment2D line in linesList)
-               outImage.Draw(line, new Bgr(Color.Yellow), 2);
-           return outImage.ToBitmap();
-           */
