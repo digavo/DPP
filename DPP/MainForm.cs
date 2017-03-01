@@ -182,7 +182,7 @@ namespace DPP
         {
             try
             {
-                pictureBox1.Image = ObrazSat.metod1();
+                pictureBox1.Image = ObrazSat.metod1((int)numericUpDown13.Value);
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
@@ -190,7 +190,7 @@ namespace DPP
         // Filtr krawędzi + Hough
         private void button10_Click(object sender, EventArgs e)
         {
-            if (!ObrazSat.BigerRoads((int)numericUpDown12.Value))
+            if (!ObrazSat.trueRoads())
             {
                 MessageBox.Show("Brak wzorca dla danego obrazu");
                 return;
@@ -255,7 +255,7 @@ namespace DPP
         // Filtr bilateralny + Filtr krawędzi + Hough
         private void button9_Click(object sender, EventArgs e)
         {
-            if (!ObrazSat.BigerRoads((int)numericUpDown12.Value))
+            if (!ObrazSat.trueRoads())
             {
                 MessageBox.Show("Brak wzorca dla danego obrazu");
                 return;
@@ -329,7 +329,7 @@ namespace DPP
         // Filtr koloru + Hough
         private void button8_Click(object sender, EventArgs e)
         {
-            if (!ObrazSat.BigerRoads((int)numericUpDown12.Value))
+            if (!ObrazSat.trueRoads())
             {
                 MessageBox.Show("Brak wzorca dla danego obrazu");
                 return;

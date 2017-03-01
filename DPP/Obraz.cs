@@ -22,7 +22,7 @@ namespace DPP
         private Image<Bgr, Byte> endImg;
         private Image<Gray, Byte> roads;
         private bool roadsExist;
-
+        private int minPx = 0;
         private Image<Gray, Byte> roads_;
         private Image<Gray, Byte> edges_;
 
@@ -192,6 +192,12 @@ namespace DPP
             ColorFilter(minVal, maxVal, maxSat);
             filterImg = filterImg.Convert<Bgr, byte>().ThresholdBinary(new Bgr(0,0,0), new Bgr(255,255,255));
             edges_ = filterImg.Convert<Gray,byte>();
+            /*Mat bw = new Mat();
+            CvInvoke.CvtColor(inImg, bw, ColorConversion.Bgr2Gray);
+            CvInvoke.Threshold(bw, bw, 40, 255, ThresholdType.Binary | ThresholdType.Otsu);
+            filterImg = bw.ToImage<Bgr, byte>();
+            edges_ = filterImg.Convert<Gray, byte>();
+            edgesImg = edges_.Clone();*/
             return filterImg.Bitmap;
         }
 
@@ -344,29 +350,24 @@ namespace DPP
             return endImg.Bitmap;
         }
 
+        
         //------ Metoda 1 --------------------------
         private void metod1Wątek(byte[] tab, int x1, int y1, int x2, int y2, int width, int depth) // canny 80, 50
         {
             int[,] pom = new int[x2, y2];
-
-            #region okręgi referencyjne
+            UnionFind unia = new UnionFind();
+            int count = 0;
+            #region obliczanie odległości od krawędzi - sąsiedztwo 8
             pom[0, 0] = 0;
             for (int i = x1 + 1; i < x2; i++)
-                if (tab[i * depth] == 255)
-                    pom[i, 0] = 0;
-                else pom[i, 0] = pom[i - 1, 0] + 1;
-
+                pom[i, 0] = 0;
             for (int i = y1 + 1; i < y2; i++)
-                if (tab[((i * width)) * depth] == 255)
-                    pom[0, i] = 0;
-                else pom[0, i] = pom[0, i - 1] + 1;
+                pom[0, i] = 0;
 
             for (int i = x1 + 1; i < x2; i++)
-            {
                 for (int j = y1 + 1; j < y2; j++)
                 {
                     int k = ((j * width) + i) * depth;
-
                     if (tab[k] == 255)
                     {
                         pom[i, j] = 0;
@@ -380,13 +381,10 @@ namespace DPP
                     pom[i, j] = m;
                     tab[k] = tab[k + 1] = tab[k + 2] = (byte)(Math.Min(25 * m, 255));
                 }
-            }
             for (int i = x2 - 2; i > x1; i--)
-            {
                 for (int j = y2 - 2; j > y1; j--)
                 {
                     int k = ((j * width) + i) * depth;
-
                     int m = Math.Min(pom[i + 1, j], pom[i, j + 1]);
                     m = Math.Min(m, pom[i + 1, j + 1]);
                     if (j - 1 > y1) m = Math.Min(m, pom[i + 1, j - 1]);
@@ -394,39 +392,41 @@ namespace DPP
                     m++;
                     pom[i, j] = m;
                     tab[k] = tab[k + 1] = tab[k + 2] = (byte)(Math.Min(25 * m, 255));
-
                 }
-            }
             #endregion
-
-            #region piksele centralne
+            #region piksele centralne z 3x3
             for (int i = x1 + 1; i < x2 - 1; i++)
-            {
                 for (int j = y1 + 1; j < y2 - 1; j++)
                 {
                     int k = ((j * width) + i) * depth;
                     tab[k] = tab[k + 1] = tab[k + 2] = 0;
-                    List<int> pom2 = new List<int> { pom[i, j], pom[i, j - 1], pom[i, j + 1], pom[i - 1, j], pom[i - 1, j - 1], pom[i - 1, j + 1], pom[i + 1, j], pom[i + 1, j - 1], pom[i + 1, j + 1],
-                    };//pom[i, j + 2], pom[i + 1, j + 2], pom[i - 1, j + 2], pom[i, j - 2], pom[i + 1, j - 2], pom[i - 1, j - 2],
-                    //pom[i - 2, j], pom[i - 2, j - 1],pom[i - 2, j - 2], pom[i - 2, j + 1],pom[i - 2, j + 2],
-                    //pom[i + 2, j], pom[i + 2, j - 1],pom[i + 2, j - 2], pom[i + 2, j + 1],pom[i + 2, j + 2]};
+                    List<int> pom2 = new List<int> {pom[i, j - 1], pom[i, j], pom[i, j + 1],
+                                                    pom[i - 1, j - 1], pom[i - 1, j], pom[i - 1, j + 1],
+                                                    pom[i + 1, j - 1], pom[i + 1, j], pom[i + 1, j + 1],};
                     int m = pom2.Max();
-                    if (pom[i, j] == m && m > 1 && m < 10)
+                    if (pom[i, j] == m && m > minPx && m < (minPx+8))
                     {
                         tab[k] = tab[k + 1] = tab[k + 2] = 255;
                         pom[i, j] = m * 100;
+                        unia.Add(count,i,j);
+                        count++;
                     }
                 }
-            }
             #endregion
+            #region grupowanie
+            count = 0;
+            for (int i = x1; i < x2; i++)
+                for (int j = y1; j < y2; j++)
+                    pom[i, j] = 0;
+            
+            foreach(var cp in unia.lista)
+                pom[cp.x, cp.y] = cp.index;
 
-            #region segmentacja
-            int p = 12;
-            for (int i = x1; i < x2; i += p)
-            {
-                for (int j = y1; j < y2; j += p)
+            int p = 5;
+            for (int i = x1; i < x2; i++)
+                for (int j = y1; j < y2; j++)
                 {
-                    List<int> pom2 = new List<int>();
+                    List<int> index = new List<int>();
                     int pi = p, pj = p;
                     if (i + p >= x2 || j + p >= y2)
                     {
@@ -435,37 +435,38 @@ namespace DPP
                     }
                     for (int ii = i; ii < i + pi; ii++)
                         for (int jj = j; jj < j + pj; jj++)
-                            pom2.Add(pom[ii, jj]);
-
-                    int m = pom2.Max();
-                    for (int ii = i; ii < i + pi; ii++)
-                        for (int jj = j; jj < j + pj; jj++)
-                            if (pom[ii, jj] < m)
-                            {
-                                int k = ((jj * width) + ii) * depth;
-                                tab[k] = tab[k + 1] = tab[k + 2] = 0;
-                            }
-                    /*int m = pom2.Count(x => x > 100);
-                    if (m < 4)
-                    {
-                        for (int ii = i; ii < i + pi; ii++)
-                        {
-                            for (int jj = j; jj < j + pj; jj++)
-                            {
-                                int k = ((jj * width) + ii) * depth;
-                                tab[k] = tab[k + 1] = tab[k + 2] = 0;
-                            }
-                        }
-                    }*/
-
+                            if (pom[ii, jj] > 0)
+                                index.Add(pom[ii, jj]);
+                    for (int k = index.Count() - 1; k > 0; k--)
+                    unia.Union(index[0], index[k]);
+                    
                 }
-            }
+            Rgb[] kolory = new Rgb[6] { new Rgb(Color.Blue), new Rgb(Color.Yellow), new Rgb(Color.Violet), new Rgb(Color.Green),  new Rgb(Color.Red), new Rgb(Color.Pink) };
+            for (int i = x1; i < x2; i++)
+                for (int j = y1; j < y2; j++)
+                {
+                    if (pom[i,j] > 0)
+                    {
+                        int k = ((j * width) + i) * depth;
+                        int m = unia.Find(unia.lista[pom[i, j]]).group;
+                        int n = m%6;
+                        if (unia.Find(unia.lista[pom[i, j]]).c < 15) continue;
+
+                        tab[k] = tab[k + 1] = tab[k + 2] = (byte)255;
+                        //tab[k] = (byte) kolory[n].Blue; 
+                        //tab[k + 1] = (byte) kolory[n].Green;
+                        //tab[k + 2] = (byte) kolory[n].Red;
+                    }
+                }
             #endregion
 
+
+
         }
-        public Bitmap metod1() //okręgi
+        public Bitmap metod1(int minp) 
         {
-            Bitmap newImg = new Bitmap(edgesImg.Bitmap);
+            minPx = minp;
+            Bitmap newImg = new Bitmap(edgesImg.Convert<Bgr,byte>().Bitmap);
             Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
             BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
             int depth = Bitmap.GetPixelFormatSize(data.PixelFormat) / 8;
@@ -476,15 +477,33 @@ namespace DPP
             );
             Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
             newImg.UnlockBits(data);
-            endImg = new Image<Bgr, byte>(newImg);
-            return newImg;
+            //Image<Bgr, byte> outImg = new Image<Bgr, byte>(newImg.Size);
+            
+            Image<Gray, byte> outImg = new Image<Gray, byte>(newImg.Size);
+            outImg = new Image<Gray, byte>(newImg);
+            #region wykluczenie obszarów zieleni
+            Mat bw = new Mat();
+            CvInvoke.CvtColor(inImg, bw, ColorConversion.Bgr2Gray);
+            CvInvoke.Threshold(bw, bw, 40, 255, ThresholdType.Binary | ThresholdType.Otsu);
+            CvInvoke.Min(new Image<Gray, byte>(newImg), bw, outImg);
+            #endregion
+            endImg = outImg.Convert<Bgr,byte>();
+            return outImg.Bitmap;
+            /*
+            Image<Gray, byte> gray = inImg.Convert<Gray, byte>();
+            Image<Gray, byte> binary = edgesImg.Not().ThresholdBinary(new Gray(100), new Gray(255));
+            Image<Gray, float> dist = new Image<Gray, float>(binary.Size);
+            CvInvoke.DistanceTransform(binary, dist, null, DistType.L2, 5);
+            CvInvoke.Normalize(dist, dist, 0, 255, NormType.MinMax);
+            endImg = dist.Convert<Bgr, byte>();
+            return dist.Bitmap;*/
         }
         
         //------ Testy -----------------------------
-        public bool BigerRoads (int it)
+        public bool trueRoads ()
         {
             if (!roadsExist) return false;
-            roads_ = roads.Dilate(it);
+            //roads_ = roads.Dilate(it);
             return true;
         }
 
@@ -603,5 +622,56 @@ namespace DPP
             #endregion
             return new double[] { com, cor, q, lines.GetLength(0) };
         }
+    }
+    class UnionFind
+    {
+        public struct CentralPixel
+        {
+            public int index;
+            public int group;
+            public int x;
+            public int y;
+            public int c;
+        }
+        public List<CentralPixel> lista = new List<CentralPixel>();
+        public void Add (int i, int xx, int yy)
+        {
+            lista.Add(new CentralPixel() { index = i, group = i, x = xx, y = yy, c = 1 });
+        }
+        public void Union (int a, int b)
+        {
+            CentralPixel fa = Find(lista[a]);
+            CentralPixel fb = Find(lista[b]);
+            if (fa.index == fb.index) return;
+
+            if (fa.c < fb.c)
+            {
+                lista[fa.index] = new CentralPixel() { index = fa.index, group = fb.index, x = fa.x, y = fa.y, c = fa.c };
+                lista[fb.index] = new CentralPixel() { index = fb.index, group = fb.index, x = fb.x, y = fb.y, c = fb.c + fa.c };
+            }
+            else
+            {
+                lista[fb.index] = new CentralPixel() { index = fb.index, group = fa.index, x = fb.x, y = fb.y, c = fb.c };
+                lista[fa.index] = new CentralPixel() { index = fa.index, group = fa.index, x = fa.x, y = fa.y, c = fb.c + fa.c };
+            }
+                }
+        public CentralPixel Find (CentralPixel a)
+        {
+            if (a.group == a.index) return a;
+            CentralPixel fa = Find(lista.Find(k => k.index == a.group));
+            lista[a.index] = new CentralPixel() { index = a.index, group = fa.index, x = a.x, y = a.y, c = a.c };
+            return fa;
+        }
+
+        public override string ToString()
+        {
+            string s = "i g c\n";
+            foreach (var p in lista)
+            {
+                s += p.index + " " + p.group + " " + p.c + "\n";
+            }
+            return s;
+        }
+
     }
 }
