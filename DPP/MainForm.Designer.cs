@@ -45,6 +45,7 @@
             this.button13 = new System.Windows.Forms.Button();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.button18 = new System.Windows.Forms.Button();
             this.groupBox6 = new System.Windows.Forms.GroupBox();
             this.button12 = new System.Windows.Forms.Button();
             this.label11 = new System.Windows.Forms.Label();
@@ -79,11 +80,19 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.numericUpDown15 = new System.Windows.Forms.NumericUpDown();
+            this.label16 = new System.Windows.Forms.Label();
+            this.label15 = new System.Windows.Forms.Label();
+            this.numericUpDown14 = new System.Windows.Forms.NumericUpDown();
+            this.numericUpDown12 = new System.Windows.Forms.NumericUpDown();
             this.numericUpDown13 = new System.Windows.Forms.NumericUpDown();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.button11 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
-            this.tabPage5 = new System.Windows.Forms.TabPage();
+            this.tabPage6 = new System.Windows.Forms.TabPage();
+            this.button17 = new System.Windows.Forms.Button();
+            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
+            this.tabPage7 = new System.Windows.Forms.TabPage();
             this.label14 = new System.Windows.Forms.Label();
             this.label13 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
@@ -93,6 +102,7 @@
             this.button9 = new System.Windows.Forms.Button();
             this.toolTipMenu = new System.Windows.Forms.ToolTip(this.components);
             this.toolTipMenu2 = new System.Windows.Forms.ToolTip(this.components);
+            this.button19 = new System.Windows.Forms.Button();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
@@ -118,8 +128,12 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
             this.tabPage4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown15)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown14)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown12)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown13)).BeginInit();
-            this.tabPage5.SuspendLayout();
+            this.tabPage6.SuspendLayout();
+            this.tabPage7.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox3
@@ -128,11 +142,11 @@
             this.groupBox3.Controls.Add(this.pictureBox1);
             this.groupBox3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox3.Font = new System.Drawing.Font("Calibri", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.groupBox3.Location = new System.Drawing.Point(370, 34);
+            this.groupBox3.Location = new System.Drawing.Point(380, 34);
             this.groupBox3.MinimumSize = new System.Drawing.Size(327, 323);
             this.groupBox3.Name = "groupBox3";
             this.tableLayoutPanel1.SetRowSpan(this.groupBox3, 2);
-            this.groupBox3.Size = new System.Drawing.Size(698, 555);
+            this.groupBox3.Size = new System.Drawing.Size(688, 555);
             this.groupBox3.TabIndex = 14;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Podgląd";
@@ -142,7 +156,7 @@
             this.pictureBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pictureBox1.Location = new System.Drawing.Point(3, 19);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(692, 533);
+            this.pictureBox1.Size = new System.Drawing.Size(682, 533);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 5;
             this.pictureBox1.TabStop = false;
@@ -153,7 +167,7 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tableLayoutPanel1.ColumnCount = 2;
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 367F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 377F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Controls.Add(this.panel1, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.groupBox2, 0, 1);
@@ -179,7 +193,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(361, 25);
+            this.panel1.Size = new System.Drawing.Size(371, 25);
             this.panel1.TabIndex = 18;
             // 
             // buttonOrig
@@ -229,7 +243,7 @@
             this.groupBox2.Font = new System.Drawing.Font("Calibri", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.groupBox2.Location = new System.Drawing.Point(3, 34);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(361, 274);
+            this.groupBox2.Size = new System.Drawing.Size(371, 274);
             this.groupBox2.TabIndex = 100;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Oryginał";
@@ -239,7 +253,7 @@
             this.pictureBox0.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pictureBox0.Location = new System.Drawing.Point(3, 19);
             this.pictureBox0.Name = "pictureBox0";
-            this.pictureBox0.Size = new System.Drawing.Size(355, 252);
+            this.pictureBox0.Size = new System.Drawing.Size(365, 252);
             this.pictureBox0.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox0.TabIndex = 5;
             this.pictureBox0.TabStop = false;
@@ -247,20 +261,21 @@
             // panel2
             // 
             this.panel2.Controls.Add(this.button16);
+            this.panel2.Controls.Add(this.button19);
             this.panel2.Controls.Add(this.button15);
             this.panel2.Controls.Add(this.button14);
             this.panel2.Controls.Add(this.button13);
             this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel2.Location = new System.Drawing.Point(370, 3);
+            this.panel2.Location = new System.Drawing.Point(380, 3);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(698, 25);
+            this.panel2.Size = new System.Drawing.Size(688, 25);
             this.panel2.TabIndex = 101;
             // 
             // button16
             // 
             this.button16.Dock = System.Windows.Forms.DockStyle.Left;
             this.button16.Font = new System.Drawing.Font("Calibri", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.button16.Location = new System.Drawing.Point(246, 0);
+            this.button16.Location = new System.Drawing.Point(328, 0);
             this.button16.Name = "button16";
             this.button16.Size = new System.Drawing.Size(82, 25);
             this.button16.TabIndex = 7;
@@ -314,26 +329,38 @@
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Controls.Add(this.tabPage3);
             this.tabControl1.Controls.Add(this.tabPage4);
-            this.tabControl1.Controls.Add(this.tabPage5);
+            this.tabControl1.Controls.Add(this.tabPage6);
+            this.tabControl1.Controls.Add(this.tabPage7);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(3, 314);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(361, 275);
+            this.tabControl1.Size = new System.Drawing.Size(371, 275);
             this.tabControl1.TabIndex = 17;
             // 
             // tabPage1
             // 
             this.tabPage1.BackColor = System.Drawing.Color.White;
             this.tabPage1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.tabPage1.Controls.Add(this.button18);
             this.tabPage1.Controls.Add(this.groupBox6);
             this.tabPage1.Controls.Add(this.groupBox5);
             this.tabPage1.Location = new System.Drawing.Point(4, 24);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(353, 247);
+            this.tabPage1.Size = new System.Drawing.Size(363, 247);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Filtry";
+            // 
+            // button18
+            // 
+            this.button18.Location = new System.Drawing.Point(15, 200);
+            this.button18.Name = "button18";
+            this.button18.Size = new System.Drawing.Size(100, 40);
+            this.button18.TabIndex = 29;
+            this.button18.Text = "Filtr medianowy";
+            this.button18.UseVisualStyleBackColor = true;
+            this.button18.Click += new System.EventHandler(this.buttonFilter4_Click);
             // 
             // groupBox6
             // 
@@ -352,7 +379,7 @@
             this.groupBox6.Size = new System.Drawing.Size(155, 234);
             this.groupBox6.TabIndex = 28;
             this.groupBox6.TabStop = false;
-            this.groupBox6.Text = "Filt koloru";
+            this.groupBox6.Text = "Filtr koloru";
             // 
             // button12
             // 
@@ -471,7 +498,7 @@
             this.groupBox5.Font = new System.Drawing.Font("Calibri", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.groupBox5.Location = new System.Drawing.Point(6, 6);
             this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(155, 234);
+            this.groupBox5.Size = new System.Drawing.Size(155, 165);
             this.groupBox5.TabIndex = 27;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "Filtr bilateralny";
@@ -581,7 +608,7 @@
             this.tabPage2.Location = new System.Drawing.Point(4, 24);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(353, 247);
+            this.tabPage2.Size = new System.Drawing.Size(363, 247);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Krawędzie";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -691,7 +718,7 @@
             this.tabPage3.Location = new System.Drawing.Point(4, 24);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage3.Size = new System.Drawing.Size(353, 247);
+            this.tabPage3.Size = new System.Drawing.Size(363, 247);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Hough";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -801,6 +828,11 @@
             // 
             // tabPage4
             // 
+            this.tabPage4.Controls.Add(this.numericUpDown15);
+            this.tabPage4.Controls.Add(this.label16);
+            this.tabPage4.Controls.Add(this.label15);
+            this.tabPage4.Controls.Add(this.numericUpDown14);
+            this.tabPage4.Controls.Add(this.numericUpDown12);
             this.tabPage4.Controls.Add(this.numericUpDown13);
             this.tabPage4.Controls.Add(this.richTextBox2);
             this.tabPage4.Controls.Add(this.button11);
@@ -808,16 +840,95 @@
             this.tabPage4.Location = new System.Drawing.Point(4, 24);
             this.tabPage4.Name = "tabPage4";
             this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage4.Size = new System.Drawing.Size(353, 247);
+            this.tabPage4.Size = new System.Drawing.Size(363, 247);
             this.tabPage4.TabIndex = 3;
             this.tabPage4.Text = "Inne";
             this.tabPage4.UseVisualStyleBackColor = true;
             // 
+            // numericUpDown15
+            // 
+            this.numericUpDown15.Increment = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.numericUpDown15.Location = new System.Drawing.Point(201, 143);
+            this.numericUpDown15.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.numericUpDown15.Name = "numericUpDown15";
+            this.numericUpDown15.Size = new System.Drawing.Size(55, 23);
+            this.numericUpDown15.TabIndex = 35;
+            this.numericUpDown15.Value = new decimal(new int[] {
+            6,
+            0,
+            0,
+            0});
+            // 
+            // label16
+            // 
+            this.label16.AutoSize = true;
+            this.label16.Location = new System.Drawing.Point(109, 145);
+            this.label16.Name = "label16";
+            this.label16.Size = new System.Drawing.Size(73, 15);
+            this.label16.TabIndex = 36;
+            this.label16.Text = "max odstęp:";
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Location = new System.Drawing.Point(109, 116);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(74, 15);
+            this.label15.TabIndex = 34;
+            this.label15.Text = "długość lini:";
+            // 
+            // numericUpDown14
+            // 
+            this.numericUpDown14.Increment = new decimal(new int[] {
+            2,
+            0,
+            0,
+            0});
+            this.numericUpDown14.Location = new System.Drawing.Point(201, 114);
+            this.numericUpDown14.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.numericUpDown14.Name = "numericUpDown14";
+            this.numericUpDown14.Size = new System.Drawing.Size(55, 23);
+            this.numericUpDown14.TabIndex = 33;
+            this.numericUpDown14.Value = new decimal(new int[] {
+            50,
+            0,
+            0,
+            0});
+            // 
+            // numericUpDown12
+            // 
+            this.numericUpDown12.Location = new System.Drawing.Point(201, 85);
+            this.numericUpDown12.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.numericUpDown12.Name = "numericUpDown12";
+            this.numericUpDown12.Size = new System.Drawing.Size(55, 23);
+            this.numericUpDown12.TabIndex = 32;
+            this.numericUpDown12.Value = new decimal(new int[] {
+            15,
+            0,
+            0,
+            0});
+            // 
             // numericUpDown13
             // 
-            this.numericUpDown13.Location = new System.Drawing.Point(127, 85);
+            this.numericUpDown13.Location = new System.Drawing.Point(112, 85);
             this.numericUpDown13.Maximum = new decimal(new int[] {
-            10,
+            1000,
             0,
             0,
             0});
@@ -833,7 +944,7 @@
             this.richTextBox2.Location = new System.Drawing.Point(6, 46);
             this.richTextBox2.Name = "richTextBox2";
             this.richTextBox2.ReadOnly = true;
-            this.richTextBox2.Size = new System.Drawing.Size(341, 33);
+            this.richTextBox2.Size = new System.Drawing.Size(375, 33);
             this.richTextBox2.TabIndex = 30;
             this.richTextBox2.TabStop = false;
             this.richTextBox2.Text = "Metoda 1: wykrywanie dróg przy pomocy pikseli centralnych, wymaga obrazu binarneg" +
@@ -861,22 +972,53 @@
             this.button5.UseVisualStyleBackColor = true;
             this.button5.Click += new System.EventHandler(this.buttonContours_Click);
             // 
-            // tabPage5
+            // tabPage6
             // 
-            this.tabPage5.Controls.Add(this.label14);
-            this.tabPage5.Controls.Add(this.label13);
-            this.tabPage5.Controls.Add(this.label12);
-            this.tabPage5.Controls.Add(this.comboBox1);
-            this.tabPage5.Controls.Add(this.button10);
-            this.tabPage5.Controls.Add(this.button8);
-            this.tabPage5.Controls.Add(this.button9);
-            this.tabPage5.Location = new System.Drawing.Point(4, 24);
-            this.tabPage5.Name = "tabPage5";
-            this.tabPage5.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage5.Size = new System.Drawing.Size(353, 247);
-            this.tabPage5.TabIndex = 4;
-            this.tabPage5.Text = "Testy";
-            this.tabPage5.UseVisualStyleBackColor = true;
+            this.tabPage6.Controls.Add(this.button17);
+            this.tabPage6.Controls.Add(this.richTextBox1);
+            this.tabPage6.Location = new System.Drawing.Point(4, 24);
+            this.tabPage6.Name = "tabPage6";
+            this.tabPage6.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage6.Size = new System.Drawing.Size(363, 247);
+            this.tabPage6.TabIndex = 5;
+            this.tabPage6.Text = "Jakość";
+            this.tabPage6.UseVisualStyleBackColor = true;
+            // 
+            // button17
+            // 
+            this.button17.Location = new System.Drawing.Point(6, 6);
+            this.button17.Name = "button17";
+            this.button17.Size = new System.Drawing.Size(100, 30);
+            this.button17.TabIndex = 28;
+            this.button17.Text = "Oblicz";
+            this.button17.UseVisualStyleBackColor = true;
+            this.button17.Click += new System.EventHandler(this.button17_Click);
+            // 
+            // richTextBox1
+            // 
+            this.richTextBox1.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.richTextBox1.Location = new System.Drawing.Point(3, 42);
+            this.richTextBox1.Name = "richTextBox1";
+            this.richTextBox1.Size = new System.Drawing.Size(357, 202);
+            this.richTextBox1.TabIndex = 27;
+            this.richTextBox1.Text = "";
+            // 
+            // tabPage7
+            // 
+            this.tabPage7.Controls.Add(this.label14);
+            this.tabPage7.Controls.Add(this.label13);
+            this.tabPage7.Controls.Add(this.label12);
+            this.tabPage7.Controls.Add(this.comboBox1);
+            this.tabPage7.Controls.Add(this.button10);
+            this.tabPage7.Controls.Add(this.button8);
+            this.tabPage7.Controls.Add(this.button9);
+            this.tabPage7.Location = new System.Drawing.Point(4, 24);
+            this.tabPage7.Name = "tabPage7";
+            this.tabPage7.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage7.Size = new System.Drawing.Size(363, 247);
+            this.tabPage7.TabIndex = 6;
+            this.tabPage7.Text = "Testy";
+            this.tabPage7.UseVisualStyleBackColor = true;
             // 
             // label14
             // 
@@ -884,7 +1026,7 @@
             this.label14.Location = new System.Drawing.Point(6, 143);
             this.label14.Name = "label14";
             this.label14.Size = new System.Drawing.Size(150, 15);
-            this.label14.TabIndex = 7;
+            this.label14.TabIndex = 14;
             this.label14.Text = "Test 3: filtr koloru + Hough";
             // 
             // label13
@@ -893,7 +1035,7 @@
             this.label13.Location = new System.Drawing.Point(6, 92);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(259, 15);
-            this.label13.TabIndex = 6;
+            this.label13.TabIndex = 13;
             this.label13.Text = "Test 2: filtr bilateralny + filtr krawędzi + Hough";
             // 
             // label12
@@ -902,7 +1044,7 @@
             this.label12.Location = new System.Drawing.Point(6, 41);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(163, 15);
-            this.label12.TabIndex = 5;
+            this.label12.TabIndex = 12;
             this.label12.Text = "Test 1: filtr krawędzi + Hough";
             // 
             // comboBox1
@@ -916,14 +1058,14 @@
             this.comboBox1.Location = new System.Drawing.Point(6, 6);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(100, 23);
-            this.comboBox1.TabIndex = 8;
+            this.comboBox1.TabIndex = 15;
             // 
             // button10
             // 
             this.button10.Location = new System.Drawing.Point(6, 59);
             this.button10.Name = "button10";
             this.button10.Size = new System.Drawing.Size(100, 30);
-            this.button10.TabIndex = 9;
+            this.button10.TabIndex = 16;
             this.button10.Text = "Test 1";
             this.button10.UseVisualStyleBackColor = true;
             this.button10.Click += new System.EventHandler(this.button10_Click);
@@ -933,7 +1075,7 @@
             this.button8.Location = new System.Drawing.Point(6, 161);
             this.button8.Name = "button8";
             this.button8.Size = new System.Drawing.Size(100, 30);
-            this.button8.TabIndex = 11;
+            this.button8.TabIndex = 18;
             this.button8.Text = "Test 3";
             this.button8.UseVisualStyleBackColor = true;
             this.button8.Click += new System.EventHandler(this.button8_Click);
@@ -943,10 +1085,23 @@
             this.button9.Location = new System.Drawing.Point(6, 110);
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(100, 30);
-            this.button9.TabIndex = 10;
+            this.button9.TabIndex = 17;
             this.button9.Text = "Test 2";
             this.button9.UseVisualStyleBackColor = true;
             this.button9.Click += new System.EventHandler(this.button9_Click);
+            // 
+            // button19
+            // 
+            this.button19.Dock = System.Windows.Forms.DockStyle.Left;
+            this.button19.Font = new System.Drawing.Font("Calibri", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.button19.Location = new System.Drawing.Point(246, 0);
+            this.button19.Name = "button19";
+            this.button19.Size = new System.Drawing.Size(82, 25);
+            this.button19.TabIndex = 8;
+            this.button19.Text = "Linie";
+            this.toolTipMenu2.SetToolTip(this.button19, "Pokaż wzorcowe drogi (jeżeli istnieją)");
+            this.button19.UseVisualStyleBackColor = true;
+            this.button19.Click += new System.EventHandler(this.button19_Click);
             // 
             // MainForm
             // 
@@ -989,9 +1144,14 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).EndInit();
             this.tabPage4.ResumeLayout(false);
+            this.tabPage4.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown15)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown14)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown12)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown13)).EndInit();
-            this.tabPage5.ResumeLayout(false);
-            this.tabPage5.PerformLayout();
+            this.tabPage6.ResumeLayout(false);
+            this.tabPage7.ResumeLayout(false);
+            this.tabPage7.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1051,7 +1211,12 @@
         private System.Windows.Forms.RichTextBox richTextBox2;
         private System.Windows.Forms.Button button11;
         private System.Windows.Forms.Button button5;
-        private System.Windows.Forms.TabPage tabPage5;
+        private System.Windows.Forms.Button button16;
+        private System.Windows.Forms.NumericUpDown numericUpDown13;
+        private System.Windows.Forms.TabPage tabPage6;
+        private System.Windows.Forms.Button button17;
+        private System.Windows.Forms.RichTextBox richTextBox1;
+        private System.Windows.Forms.TabPage tabPage7;
         private System.Windows.Forms.Label label14;
         private System.Windows.Forms.Label label13;
         private System.Windows.Forms.Label label12;
@@ -1059,8 +1224,13 @@
         private System.Windows.Forms.Button button10;
         private System.Windows.Forms.Button button8;
         private System.Windows.Forms.Button button9;
-        private System.Windows.Forms.Button button16;
-        private System.Windows.Forms.NumericUpDown numericUpDown13;
+        private System.Windows.Forms.NumericUpDown numericUpDown12;
+        private System.Windows.Forms.Label label15;
+        private System.Windows.Forms.NumericUpDown numericUpDown14;
+        private System.Windows.Forms.NumericUpDown numericUpDown15;
+        private System.Windows.Forms.Label label16;
+        private System.Windows.Forms.Button button18;
+        private System.Windows.Forms.Button button19;
     }
 }
 
