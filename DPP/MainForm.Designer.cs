@@ -40,6 +40,7 @@
             this.pictureBox0 = new System.Windows.Forms.PictureBox();
             this.panel2 = new System.Windows.Forms.Panel();
             this.button16 = new System.Windows.Forms.Button();
+            this.button19 = new System.Windows.Forms.Button();
             this.button15 = new System.Windows.Forms.Button();
             this.button14 = new System.Windows.Forms.Button();
             this.button13 = new System.Windows.Forms.Button();
@@ -102,7 +103,7 @@
             this.button9 = new System.Windows.Forms.Button();
             this.toolTipMenu = new System.Windows.Forms.ToolTip(this.components);
             this.toolTipMenu2 = new System.Windows.Forms.ToolTip(this.components);
-            this.button19 = new System.Windows.Forms.Button();
+            this.numericUpDown16 = new System.Windows.Forms.NumericUpDown();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
@@ -134,6 +135,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown13)).BeginInit();
             this.tabPage6.SuspendLayout();
             this.tabPage7.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown16)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox3
@@ -283,6 +285,19 @@
             this.toolTipMenu2.SetToolTip(this.button16, "Pokaż wzorcowe drogi (jeżeli istnieją)");
             this.button16.UseVisualStyleBackColor = true;
             this.button16.Click += new System.EventHandler(this.button16_Click);
+            // 
+            // button19
+            // 
+            this.button19.Dock = System.Windows.Forms.DockStyle.Left;
+            this.button19.Font = new System.Drawing.Font("Calibri", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.button19.Location = new System.Drawing.Point(246, 0);
+            this.button19.Name = "button19";
+            this.button19.Size = new System.Drawing.Size(82, 25);
+            this.button19.TabIndex = 8;
+            this.button19.Text = "Linie";
+            this.toolTipMenu2.SetToolTip(this.button19, "Pokaż wzorcowe drogi (jeżeli istnieją)");
+            this.button19.UseVisualStyleBackColor = true;
+            this.button19.Click += new System.EventHandler(this.button19_Click);
             // 
             // button15
             // 
@@ -828,6 +843,7 @@
             // 
             // tabPage4
             // 
+            this.tabPage4.Controls.Add(this.numericUpDown16);
             this.tabPage4.Controls.Add(this.numericUpDown15);
             this.tabPage4.Controls.Add(this.label16);
             this.tabPage4.Controls.Add(this.label15);
@@ -1023,16 +1039,16 @@
             // label14
             // 
             this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(6, 143);
+            this.label14.Location = new System.Drawing.Point(6, 134);
             this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(150, 15);
+            this.label14.Size = new System.Drawing.Size(138, 15);
             this.label14.TabIndex = 14;
-            this.label14.Text = "Test 3: filtr koloru + Hough";
+            this.label14.Text = "Test 3: piksele centralne";
             // 
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(6, 92);
+            this.label13.Location = new System.Drawing.Point(6, 83);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(259, 15);
             this.label13.TabIndex = 13;
@@ -1041,7 +1057,7 @@
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(6, 41);
+            this.label12.Location = new System.Drawing.Point(6, 32);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(163, 15);
             this.label12.TabIndex = 12;
@@ -1053,8 +1069,7 @@
             this.comboBox1.FormattingEnabled = true;
             this.comboBox1.Items.AddRange(new object[] {
             "Sobel",
-            "Canny",
-            "Laplace"});
+            "Canny"});
             this.comboBox1.Location = new System.Drawing.Point(6, 6);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(100, 23);
@@ -1062,7 +1077,7 @@
             // 
             // button10
             // 
-            this.button10.Location = new System.Drawing.Point(6, 59);
+            this.button10.Location = new System.Drawing.Point(6, 50);
             this.button10.Name = "button10";
             this.button10.Size = new System.Drawing.Size(100, 30);
             this.button10.TabIndex = 16;
@@ -1072,7 +1087,7 @@
             // 
             // button8
             // 
-            this.button8.Location = new System.Drawing.Point(6, 161);
+            this.button8.Location = new System.Drawing.Point(6, 152);
             this.button8.Name = "button8";
             this.button8.Size = new System.Drawing.Size(100, 30);
             this.button8.TabIndex = 18;
@@ -1082,7 +1097,7 @@
             // 
             // button9
             // 
-            this.button9.Location = new System.Drawing.Point(6, 110);
+            this.button9.Location = new System.Drawing.Point(6, 101);
             this.button9.Name = "button9";
             this.button9.Size = new System.Drawing.Size(100, 30);
             this.button9.TabIndex = 17;
@@ -1090,18 +1105,17 @@
             this.button9.UseVisualStyleBackColor = true;
             this.button9.Click += new System.EventHandler(this.button9_Click);
             // 
-            // button19
+            // numericUpDown16
             // 
-            this.button19.Dock = System.Windows.Forms.DockStyle.Left;
-            this.button19.Font = new System.Drawing.Font("Calibri", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.button19.Location = new System.Drawing.Point(246, 0);
-            this.button19.Name = "button19";
-            this.button19.Size = new System.Drawing.Size(82, 25);
-            this.button19.TabIndex = 8;
-            this.button19.Text = "Linie";
-            this.toolTipMenu2.SetToolTip(this.button19, "Pokaż wzorcowe drogi (jeżeli istnieją)");
-            this.button19.UseVisualStyleBackColor = true;
-            this.button19.Click += new System.EventHandler(this.button19_Click);
+            this.numericUpDown16.Location = new System.Drawing.Point(291, 85);
+            this.numericUpDown16.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.numericUpDown16.Name = "numericUpDown16";
+            this.numericUpDown16.Size = new System.Drawing.Size(55, 23);
+            this.numericUpDown16.TabIndex = 37;
             // 
             // MainForm
             // 
@@ -1152,6 +1166,7 @@
             this.tabPage6.ResumeLayout(false);
             this.tabPage7.ResumeLayout(false);
             this.tabPage7.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown16)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -1231,6 +1246,7 @@
         private System.Windows.Forms.Label label16;
         private System.Windows.Forms.Button button18;
         private System.Windows.Forms.Button button19;
+        private System.Windows.Forms.NumericUpDown numericUpDown16;
     }
 }
 

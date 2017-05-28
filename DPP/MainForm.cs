@@ -15,7 +15,7 @@ namespace DPP
 {
     public partial class MainForm : Form
     {
-        private string fileName = "";
+        private string nazwaPliku = "";
         private Obraz ObrazSat;
         private int licznik = 0;
         private bool czyMetoda = false;
@@ -38,8 +38,8 @@ namespace DPP
             oknoWyboruPliku.RestoreDirectory = true;
             if (oknoWyboruPliku.ShowDialog() == DialogResult.OK)
             {
-                fileName = oknoWyboruPliku.FileName;
-                ObrazSat = new Obraz(fileName);
+                nazwaPliku = oknoWyboruPliku.FileName;
+                ObrazSat = new Obraz(nazwaPliku);
                 /*if (fileName.ToLower().Contains("tif") || fileName.ToLower().Contains("tiff"))
                     if (!ObrazSat.ReadTiff(fileName))
                     {
@@ -54,6 +54,7 @@ namespace DPP
                 buttonSave.Enabled = buttonOrig.Enabled = button13.Enabled = button14.Enabled = button15.Enabled = button16.Enabled =  true;
                 if (!ObrazSat.trueRoads()) button17.Enabled = false;
                 else button17.Enabled = true;
+                
             }
         }
         private void buttonSave_Click(object sender, EventArgs e)
@@ -221,7 +222,7 @@ namespace DPP
             try
             {
                 czyMetoda = true;   
-                pictureBox1.Image = ObrazSat.metod1((int)numericUpDown13.Value, (int)numericUpDown12.Value, (int)numericUpDown14.Value, (int)numericUpDown15.Value);
+                pictureBox1.Image = ObrazSat.metodaPix((int)numericUpDown13.Value, (int)numericUpDown12.Value, (int)numericUpDown14.Value, (int)numericUpDown15.Value,(int)numericUpDown16.Value);
             }
             catch (Exception ex) { MessageBox.Show("Błąd " + ex.ToString()); }
         }
@@ -231,7 +232,6 @@ namespace DPP
         // Filtr krawędzi + Hough
         private void button10_Click(object sender, EventArgs e)
         {
-            int szerokosc = 9;
             if (!ObrazSat.trueRoads())
             {
                 MessageBox.Show("Brak wzorca dla danego obrazu");
@@ -240,65 +240,124 @@ namespace DPP
             
             int index = comboBox1.SelectedIndex;
             int tr1 = 180, tr2 = 100, h1 = 20, h2 = 60, h3 = 6;
-            double[] delta = { -1, 0 };
-            int[] param = { tr1, tr2, h1, h2, h3 };
-            string fileName1 = "test1_1.txt", fileName2 = "test1_2_dokładniej2.txt", wynik = (index == 0) ? "Sobel: " : "Canny: ";
+            double[] pCom = { -1, -1, -1, tr1, tr2, h1, h2, h3 };
+            double[] pCor = { -1, -1, -1, tr1, tr2, h1, h2, h3 };
+            double[] pQ = { -1, -1, -1, tr1, tr2, h1, h2, h3 };
+            double[] p2 = { -1, -1, -1, tr1, tr2, h1, h2, h3 };
+            string fileName1 = "test1_1.txt", fileName2 = "test1_2.txt", wynik = (index == 0) ? "Sobel: " : "Canny: ";
 
             if (index == 0) //Sobel
             {
-                File.AppendAllText(fileName1, "Sobel + Hough ---------------" + Environment.NewLine);
-                File.AppendAllText(fileName1, "tr1;  h1;  h2;  h3; com; cor; q; linie;" + Environment.NewLine);
-                for (tr1 = 50; tr1 <= 200; tr1 += 50) //4
-                    for (h1 = 30; h1 <= 150; h1 += 30) //5
-                        for (h2 = 10; h2 <= 70; h2 += 15) //5
-                            for (h3 = 0; h3 <= 8; h3 += 2) //5
+                File.AppendAllText(fileName1, Environment.NewLine + "Sobel + Hough | " + nazwaPliku + Environment.NewLine);
+                File.AppendAllText(fileName1, "com; cor; q; tr1; ---; h1; h2; h3;" + Environment.NewLine);
+                tr2 = 0;
+                int count = 0; h1 = 30;
+
+                for (tr1 = 75; tr1 <= 200; tr1 += 25) //6
+                   for (h1 = 20; h1 <= 25; h1 += 5) //3
+                    for (h2 = 25; h2 <= 100; h2 += 15) //6
+                        for (h3 = 2; h3 <= 8; h3 += 2) //4
+                        {
+                            count++;
+                            Console.WriteLine(" Numer: " + count);
+                            bool notOk = true;
+                            while (notOk)
                             {
-                                
-                                double[] pom = ObrazSat.Test1(index, tr1, tr2, h1, h2, h3,szerokosc);
-                                if (pom[0] > delta[0])
+                                try
                                 {
-                                    delta = pom;
-                                    param = new int[] { tr1, tr2, h1, h2, h3 };
+                                    double[] pom = ObrazSat.Test1(index, tr1, tr2, h1, h2, h3);
+                                    if (pom[0] > pCom[0])
+                                        pCom = new double[] { pom[0], pom[1], pom[2], tr1, tr2, h1, h2, h3 };
+                                    if (pom[1] > pCor[1])
+                                        pCor = new double[] { pom[0], pom[1], pom[2], tr1, tr2, h1, h2, h3 };
+                                    if (pom[2] > pQ[2])
+                                        pQ = new double[] { pom[0], pom[1], pom[2], tr1, tr2, h1, h2, h3 };
+                                    if (pom[0] >= p2[0] && pom[1] >= p2[1])
+                                        p2 = new double[] { pom[0], pom[1], pom[2], tr1, tr2, h1, h2, h3 };
+                                    notOk = false;
                                 }
-                                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}",
-                                    tr1, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine(" - Numer: " + count + " - " + ex.ToString());
+                                    MessageBox.Show(ex.ToString());
+                                    notOk = true;
+                                }
                             }
+                            //File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10}",
+                            //   f1, f2, f3, tr1, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
+                        }
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7};",
+                pCom[0], pCom[1], pCom[2], pCom[3], pCom[4], pCom[5], pCom[6], pCom[7]) + Environment.NewLine);
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7};",
+                pCor[0], pCor[1], pCor[2], pCor[3], pCor[4], pCor[5], pCor[6], pCor[7]) + Environment.NewLine);
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7};",
+                pQ[0], pQ[1], pQ[2], pQ[3], pQ[4], pQ[5], pQ[6], pQ[7]) + Environment.NewLine);
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7};",
+                p2[0], p2[1], p2[2], p2[3], p2[4], p2[5], p2[6], p2[7]) + Environment.NewLine);
             }
             else
             {
-                File.AppendAllText(fileName2, "Canny + Hough ---------------" + Environment.NewLine);
-                File.AppendAllText(fileName2, "tr1; tr2; h1; h2; h3; | com; cor; q; linie;" + Environment.NewLine);
-                //for (tr1 = 250; tr1 <= 300; tr1 += 25) //5
-                //for (tr2 = 200; tr2 <= tr1; tr2 += 25)
-                tr1 = 300; tr2 = 275;
-                        for (h1 = 30; h1 <= 50; h1 += 10) 
-                            for (h2 = 40; h2 <= 110; h2 += 5) //4
-                                for (h3 = 4; h3 <= 10; h3 += 1) //5
+                File.AppendAllText(fileName2, Environment.NewLine + "Canny + Hough | " + nazwaPliku + Environment.NewLine);
+                File.AppendAllText(fileName2, "com; cor; q; tr1; tr2; h1; h2; h3;" + Environment.NewLine);
+                tr2 = 0;
+                int count = 0; h1 = 30;
+
+                for (tr1 = 100; tr1 <= 250; tr1 += 25) //9
+                    for (tr2 = 100; tr2 <= tr1; tr2 += 25) //
+                        for (h1 = 20; h1 <= 25; h1 += 5) //3
+                            for (h2 = 25; h2 <= 100; h2 += 15) //6
+                                for (h3 = 2; h3 <= 8; h3 += 2) //4
                                 {
-                                    double[] pom = ObrazSat.Test1(index, tr1, tr2, h1, h2, h3,szerokosc);
-                                    if (pom[0] > delta[0])
+                                    count++;
+                                    Console.WriteLine(" Numer: " + count);
+                                    bool notOk = true;
+                                    while (notOk)
                                     {
-                                        delta = pom;
-                                        param = new int[] { tr1, tr2, h1, h2, h3 };
+                                        try
+                                        {
+                                            double[] pom = ObrazSat.Test1(index, tr1, tr2, h1, h2, h3);
+                                            if (pom[0] > pCom[0])
+                                                pCom = new double[] { pom[0], pom[1], pom[2], tr1, tr2, h1, h2, h3 };
+                                            if (pom[1] > pCor[1])
+                                                pCor = new double[] { pom[0], pom[1], pom[2], tr1, tr2, h1, h2, h3 };
+                                            if (pom[2] > pQ[2])
+                                                pQ = new double[] { pom[0], pom[1], pom[2], tr1, tr2, h1, h2, h3 };
+                                            if (pom[0] >= p2[0] && pom[1] >= p2[1])
+                                                p2 = new double[] { pom[0], pom[1], pom[2], tr1, tr2, h1, h2, h3 };
+                                            notOk = false;
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(" - Numer: " + count + " - " + ex.ToString());
+                                            MessageBox.Show(ex.ToString());
+                                            notOk = true;
+                                        }
                                     }
-                                    File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}",
-                                    tr1, tr2, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
+                                    //File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10}",
+                                    //   f1, f2, f3, tr1, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
                                 }
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7};",
+                pCom[0], pCom[1], pCom[2], pCom[3], pCom[4], pCom[5], pCom[6], pCom[7]) + Environment.NewLine);
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7};",
+                pCor[0], pCor[1], pCor[2], pCor[3], pCor[4], pCor[5], pCor[6], pCor[7]) + Environment.NewLine);
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7};",
+                pQ[0], pQ[1], pQ[2], pQ[3], pQ[4], pQ[5], pQ[6], pQ[7]) + Environment.NewLine);
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7};",
+                p2[0], p2[1], p2[2], p2[3], p2[4], p2[5], p2[6], p2[7]) + Environment.NewLine);
             }
-            numericUpDown1.Value = param[0];
+            /*numericUpDown1.Value = param[0];
             numericUpDown2.Value = param[1];
             numericUpDown3.Value = param[2];
             numericUpDown4.Value = param[3];
             numericUpDown5.Value = param[4];
             if (index == 0) buttonSobel_Click(sender, e);
             else buttonCanny_Click(sender, e);
-            buttonHough_Click(sender, e);
+            buttonHough_Click(sender, e);*/
         }
 
         // Filtr bilateralny + Filtr krawędzi + Hough
         private void button9_Click(object sender, EventArgs e)
         {
-            int szerokosc = 9;
             if (!ObrazSat.trueRoads())
             {
                 MessageBox.Show("Brak wzorca dla danego obrazu");
@@ -307,56 +366,138 @@ namespace DPP
             
             int index = comboBox1.SelectedIndex;
             int f1 = 15, f2 = 80, f3 = 80, tr1 = 180, tr2 = 100, h1 = 20, h2 = 60, h3 = 6;
-            double[] delta = { -1, 0 };
-            int[] param = { f1, f2, f3, tr1, tr2, h1, h2, h3 };
+            double[] pCom = { -1, -1, -1, f1, f2, f3, tr1, tr2, h1, h2, h3 };
+            double[] pCor = { -1, -1, -1, f1, f2, f3, tr1, tr2, h1, h2, h3 };
+            double[] pQ = { -1, -1, -1, f1, f2, f3, tr1, tr2, h1, h2, h3 };
+            double[] p2 = { -1, -1, -1, f1, f2, f3, tr1, tr2, h1, h2, h3 };
             string fileName1 = "test2_1.txt", fileName2 = "test2_2.txt", wynik = (index == 0) ? "Sobel: " : "Canny: ";
-
             if (index == 0) //Sobel
             {
-                File.AppendAllText(fileName1, "filtr b + Sobel + Hough ---------------" + Environment.NewLine);
-                File.AppendAllText(fileName1, "f1; f2; f3; tr1;  h1;  h2;  h3; com; cor; q; linie;" + Environment.NewLine);
-                for (f1 = 5; f1 <= 35; f1 += 10) //4
+                tr2 = 0;
+                File.AppendAllText(fileName1, Environment.NewLine + "filtr b + Sobel + Hough | " + nazwaPliku + Environment.NewLine);
+                File.AppendAllText(fileName1, "com; cor; q; f1; f2; f3; tr1; ---; h1;  h2;  h3;" + Environment.NewLine);
+                /*for (f1 = 5; f1 <= 35; f1 += 10) //4
                     for (f2 = 40; f2 <= 120; f2 += 40) //3
                         for (f3 = 40; f3 <= 120; f3 += 40) //3
                             for (tr1 = 50; tr1 <= 200; tr1 += 50) //4
                                 for (h1 = 30; h1 <= 150; h1 += 30) //5
                                     for (h2 = 10; h2 <= 70; h2 += 15) //5
-                                        for (h3 = 0; h3 <= 8; h3 += 2) //5
-                            {
-                                double[] pom = ObrazSat.Test2(index, f1, f2, f3,tr1, tr2, h1, h2, h3);
-                                if (pom[0] > delta[0])
-                                {
-                                    delta = pom;
-                                    param = new int[] { f1, f2, f3, tr1, tr2, h1, h2, h3 };
-                                }
-                                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10}",
-                                    f1, f2, f3, tr1, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
-                            }
+                                        for (h3 = 0; h3 <= 8; h3 += 2) //5*/
+                int count = 0; h1 = 30;
+                for (f1 = 10; f1 <= 20; f1 += 5) //3
+                    for (f2 = 70; f2 <= 90; f2 += 10) //3
+                        for (f3 = 70; f3 <= 90; f3 += 10) //3
+                            for (tr1 = 50; tr1 <= 200; tr1 += 50) //4
+                                //for (h1 = 20; h1 <= 25; h1 += 5) //3
+                                    for (h2 = 25; h2 <= 100; h2 += 15) //6
+                                        for (h3 = 2; h3 <= 8; h3 += 2) //4
+                                        {
+                                            count++;
+                                            Console.WriteLine(" Numer: "+count);
+                                            bool notOk = true;
+                                            while (notOk)
+                                            {
+                                                try
+                                                {
+                                                    double[] pom = ObrazSat.Test2(index, f1, f2, f3, tr1, tr2, h1, h2, h3);
+                                                    if (pom[0] > pCom[0])
+                                                        pCom = new double[] { pom[0], pom[1], pom[2], f1, f2, f3, tr1, tr2, h1, h2, h3 };
+                                                    if (pom[1] > pCor[1])
+                                                        pCor = new double[] { pom[0], pom[1], pom[2], f1, f2, f3, tr1, tr2, h1, h2, h3 };
+                                                    if (pom[2] > pQ[2])
+                                                        pQ = new double[] { pom[0], pom[1], pom[2], f1, f2, f3, tr1, tr2, h1, h2, h3 };
+                                                    if (pom[0] >= p2[0] && pom[1] >= p2[1])
+                                                        p2 = new double[] { pom[0], pom[1], pom[2], f1, f2, f3, tr1, tr2, h1, h2, h3 };
+                                                    notOk = false;
+                                                }
+                                                catch (Exception ex)
+                                                { 
+                                                    Console.WriteLine(" - Numer: "+count + " - " + ex.ToString());
+                                                    MessageBox.Show(ex.ToString());
+                                                    notOk = true;
+                                                }
+                                            }
+                                            //File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10}",
+                                            //   f1, f2, f3, tr1, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
+                                        }
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10};",
+                pCom[0], pCom[1], pCom[2], pCom[3], pCom[4], pCom[5], pCom[6], pCom[7], pCom[8], pCom[9], pCom[10]) + Environment.NewLine);
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10};",
+                pCor[0], pCor[1], pCor[2], pCor[3], pCor[4], pCor[5], pCor[6], pCor[7], pCor[8], pCor[9], pCor[10]) + Environment.NewLine);
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10};",
+                pQ[0], pQ[1], pQ[2], pQ[3], pQ[4], pQ[5], pQ[6], pQ[7], pQ[8], pQ[9], pQ[10]) + Environment.NewLine);
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10};",
+                p2[0], p2[1], p2[2], p2[3], p2[4], p2[5], p2[6], p2[7], p2[8], p2[9], p2[10]) + Environment.NewLine);
+
             }
+            /*pCom = new double[] { -1, -1, -1, f1, f2, f3, tr1, tr2, h1, h2, h3 };
+            pCor = new double[] { -1, -1, -1, f1, f2, f3, tr1, tr2, h1, h2, h3 };
+            pQ = new double[] { -1, -1, -1, f1, f2, f3, tr1, tr2, h1, h2, h3 };*/
             else
             {
-                File.AppendAllText(fileName2, "filtr b + Canny + Hough ---------------" + Environment.NewLine);
-                File.AppendAllText(fileName2, "f1; f2; f3; tr1; tr2; h1; h2; h3; | com; cor; q; linie;" + Environment.NewLine);
-                for (f1 = 5; f1 <= 35; f1 += 10) //4
+                File.AppendAllText(fileName2, Environment.NewLine + "filtr b + Canny + Hough | " +nazwaPliku + Environment.NewLine);
+                File.AppendAllText(fileName2, "com; cor; q; f1; f2; f3; tr1; tr2; h1; h2; h3;" + Environment.NewLine);
+                /*for (f1 = 5; f1 <= 35; f1 += 10) //4
                     for (f2 = 40; f2 <= 120; f2 += 40) //3
                         for (f3 = 40; f3 <= 120; f3 += 40) //3
                             for (tr1 = 150; tr1 <= 250; tr1 += 25) //5
                                 for (tr2 = 100; tr2 <= tr1; tr2 += 25)
                                     for (h1 = 30; h1 <= 150; h1 += 30) //5
                                         for (h2 = 10; h2 <= 70; h2 += 15) //5
-                                            for (h3 = 0; h3 <= 8; h3 += 2) //5
-                                {
-                                    double[] pom = ObrazSat.Test2(index, f1, f2, f3, tr1, tr2, h1, h2, h3);
-                                    if (pom[0] > delta[0])
+                                            for (h3 = 0; h3 <= 8; h3 += 2) //5*/
+                int[] tr = { 100, 150, 150, 150, 150, 180, 180, 200, 200, 200 };
+                int count = 0; h1 = 30;
+                for (f1 = 10; f1 <= 20; f1 += 5) //3
+                    for (f2 = 70; f2 <= 90; f2 += 10) //3
+                        for (f3 = 70; f3 <= 90; f3 += 10) //3
+                            for (int i = 0; i <= 8; i += 2) //5
+                            {
+                                tr1 = tr[i]; tr2 = tr[i + 1];
+                                //for (h1 = 15; h1 <= 25; h1 += 5) //3
+                                for (h2 = 25; h2 <= 100; h2 += 15) //6
+                                    for (h3 = 2; h3 <= 8; h3 += 2) //4
                                     {
-                                        delta = pom;
-                                        param = new int[] { f1, f2, f3, tr1, tr2, h1, h2, h3 };
+                                        count++;
+                                        Console.WriteLine(" Numer: " + count);
+                                        bool notOk = true;
+                                        while (notOk)
+                                        {
+                                            try
+                                            {
+                                                double[] pom = ObrazSat.Test2(index, f1, f2, f3, tr1, tr2, h1, h2, h3);
+                                                if (pom[0] > pCom[0])
+                                                    pCom = new double[] { pom[0], pom[1], pom[2], f1, f2, f3, tr1, tr2, h1, h2, h3 };
+                                                if (pom[1] > pCor[1])
+                                                    pCor = new double[] { pom[0], pom[1], pom[2], f1, f2, f3, tr1, tr2, h1, h2, h3 };
+                                                if (pom[2] > pQ[2])
+                                                    pQ = new double[] { pom[0], pom[1], pom[2], f1, f2, f3, tr1, tr2, h1, h2, h3 };
+                                                if (pom[0] >= p2[0] && pom[1] >= p2[1])
+                                                    p2 = new double[] { pom[0], pom[1], pom[2], f1, f2, f3, tr1, tr2, h1, h2, h3 };
+                                                //File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10}; {11}",
+                                                //f1, f2, f3, tr1, tr2, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
+                                                notOk = false;
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Console.WriteLine(" - Numer: " + count + " - " + ex.ToString());
+                                                MessageBox.Show(ex.ToString());
+                                                notOk = true;
+                                            }
+                                        }
                                     }
-                                    File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10}; {11}",
-                                    f1, f2, f3, tr1, tr2, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
-                                }
+                            }
+                Console.WriteLine(" ------ koniec ");
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10};",
+                pCom[0], pCom[1], pCom[2], pCom[3], pCom[4], pCom[5], pCom[6], pCom[7], pCom[8], pCom[9], pCom[10]) + Environment.NewLine);
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10};",
+                pCor[0], pCor[1], pCor[2], pCor[3], pCor[4], pCor[5], pCor[6], pCor[7], pCor[8], pCor[9], pCor[10]) + Environment.NewLine);
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10};",
+                pQ[0], pQ[1], pQ[2], pQ[3], pQ[4], pQ[5], pQ[6], pQ[7], pQ[8], pQ[9], pQ[10]) + Environment.NewLine);
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10};",
+                p2[0], p2[1], p2[2], p2[3], p2[4], p2[5], p2[6], p2[7], p2[8], p2[9], p2[10]) + Environment.NewLine);
             }
-            numericUpDown1.Value = param[3];
+            
+            /*numericUpDown1.Value = param[3];
             numericUpDown2.Value = param[4];
             numericUpDown3.Value = param[5];
             numericUpDown4.Value = param[6];
@@ -367,10 +508,10 @@ namespace DPP
             buttonFilter1_Click(sender, e);
             if (index == 0) buttonSobel_Click(sender, e);
             else buttonCanny_Click(sender, e);
-            buttonHough_Click(sender, e);
+            buttonHough_Click(sender, e);*/
         }
-
-        // Filtr koloru + Hough
+        
+        // metoda pikseli centralnych
         private void button8_Click(object sender, EventArgs e)
         {
             if (!ObrazSat.trueRoads())
@@ -378,36 +519,130 @@ namespace DPP
                 MessageBox.Show("Brak wzorca dla danego obrazu");
                 return;
             }
-            int c1 = 60, c2 = 90, c3 = 15, h1 = 20, h2 = 60, h3 = 6;
-            double[] delta = { -1, 0 };
-            int[] param = { c1, c3 , h1, h2, h3 };
-            string fileName = "test3.txt";
-            
-            File.AppendAllText(fileName, "kolor + Hough ---------------" + Environment.NewLine);
-            File.AppendAllText(fileName, "c1; c3;  h1;  h2;  h3; com; cor; q; linie;" + Environment.NewLine);
-            for (c1 = 60; c1 <= 70; c1 += 5) //3
-                for (c3 = 15; c3 <= 25; c3 += 5) //3
-                    //for (h1 = 30; h1 <= 150; h1 += 30) //5
-                        for (h2 = 20; h2 <= 80; h2 += 15) //5
-                            for (h3 = 0; h3 <= 8; h3 += 2) //5
-                            {
-                                //pictureBox1.Image = obrazek.Test3(c1, c2, c3, h1, h2, h3);
-                                double[] pom = ObrazSat.Test3(c1, c2, c3, h1, h2, h3);
-                                if (pom[0] > delta[0])
+
+            int index = comboBox1.SelectedIndex;
+            int tr1 = 180, tr2 = 100, h1 = 30, h2 = 0, Pmin = 0, Pmax = 10000, tr3=60;
+            double[] pCom = { -1, -1, -1, tr1, tr2, Pmin, Pmax, h1, h2};
+            double[] pCor = { -1, -1, -1, tr1, tr2, Pmin, Pmax, h1, h2};
+            double[] pQ = { -1, -1, -1, tr1, tr2, Pmin, Pmax, h1, h2};
+            double[] p2 = { -1, -1, -1, tr1, tr2, Pmin, Pmax, h1, h2,};
+            string fileName1 = "test3_1.txt", fileName2 = "test3_2.txt", wynik = (index == 0) ? "Sobel: " : "Canny: ";
+
+            ObrazSat.MedianFilter_Test();
+
+            if (index == 0) //Sobel
+            {
+                File.AppendAllText(fileName1, Environment.NewLine+"Sobel + piksele | " + nazwaPliku + Environment.NewLine);
+                File.AppendAllText(fileName1, "com; cor; q; tr1; ---; Pmin; Pmax; h1; h2;" + Environment.NewLine);
+                tr2 = 0;
+                int count = 0;
+                for (tr1 = 30; tr1 <= 110; tr1 += 20) //5
+                    for (Pmin = 1; Pmin < 4; Pmin++) //3
+                        for (tr3 = 10; tr3 <= 120; tr3 += 20) //7
+                            for (h1 = 10; h1 <= 50; h1 += 10) //5
+                                for (h2 = 2; h2 <= 10; h2 += 2) //4
                                 {
-                                    delta = pom;
-                                    param = new int[] { c1, c3, h1, h2, h3 };
-                                }
-                                File.AppendAllText(fileName, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}",
-                                    c1, c3, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
+                                    count++;
+                                    Console.WriteLine(" Numer: " + count);
+                                    bool notOk = true;
+                                    while (notOk)
+                                    {
+                                        try
+                                        {
+                                            double[] pom = ObrazSat.metodaPix_Test(index, tr1, tr2, Pmin, Pmax, h1, h2, tr3);
+                                            if (pom[0] > pCom[0])
+                                                pCom = new double[] { pom[0], pom[1], pom[2], tr1, tr2, Pmin, h1, h2, tr3 };
+                                            if (pom[1] > pCor[1])
+                                                pCor = new double[] { pom[0], pom[1], pom[2], tr1, tr2, Pmin, h1, h2, tr3 };
+                                            if (pom[2] > pQ[2])
+                                                pQ = new double[] { pom[0], pom[1], pom[2], tr1, tr2, Pmin, h1, h2, tr3 };
+                                            if (pom[0] >= p2[0] && pom[1] >= p2[1])
+                                                p2 = new double[] { pom[0], pom[1], pom[2], tr1, tr2, Pmin, h1, h2, tr3 };
+                                            notOk = false;
+                                            //System.GC.Collect();
+
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(" - Numer: " + count + " - " + ex.ToString());
+                                            MessageBox.Show(ex.ToString());
+                                            notOk = true;
+                                        }
+                                    }
+                                //File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10}",
+                                //   f1, f2, f3, tr1, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
                             }
-            /*numericUpDown10.Value = param[0];
-            numericUpDown9.Value = param[1];
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8};",
+                pCom[0], pCom[1], pCom[2], pCom[3], pCom[4], pCom[5], pCom[6], pCom[7], pCom[8]) + Environment.NewLine);
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8};",
+                pCor[0], pCor[1], pCor[2], pCor[3], pCor[4], pCor[5], pCor[6], pCor[7], pCor[8]) + Environment.NewLine);
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8};",
+                pQ[0], pQ[1], pQ[2], pQ[3], pQ[4], pQ[5], pQ[6], pQ[7], pQ[8]) + Environment.NewLine);
+                File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8};",
+                p2[0], p2[1], p2[2], p2[3], p2[4], p2[5], p2[6], p2[7], p2[8]) + Environment.NewLine);
+            }
+            else
+            {
+                File.AppendAllText(fileName2, Environment.NewLine+ "Canny + piksele | " + nazwaPliku + Environment.NewLine);
+                File.AppendAllText(fileName2, "com; cor; q; tr1; tr2; Pmin; Pmax; h1; h2;" + Environment.NewLine);
+                tr2 = 0;
+                int count = 0;
+                int[] tr = { 150, 150, 100, 150, 100, 100, 50, 100 };
+                for (int i = 0; i <= 6; i += 2) //4
+                {
+                    tr1 = tr[i]; tr2 = tr[i + 1];
+                    for (Pmin = 1; Pmin < 4; Pmin++)//3
+                        for (tr3 = 10; tr3 <= 120; tr3 += 20) //7
+                            for (h1 = 10; h1 <= 50; h1 += 10) //5
+                                for (h2 = 2; h2 <= 10; h2 += 2) //4
+                                {
+                                    count++;
+                                    Console.WriteLine(" Numer: " + count);
+                                    bool notOk = true;
+                                    while (notOk)
+                                    {
+                                        try
+                                        {
+                                            double[] pom = ObrazSat.metodaPix_Test(index, tr1, tr2, Pmin, Pmax, h1, h2, tr3);
+                                            if (pom[0] > pCom[0])
+                                                pCom = new double[] { pom[0], pom[1], pom[2], tr1, tr2, Pmin, h1, h2, tr3 };
+                                            if (pom[1] > pCor[1])
+                                                pCor = new double[] { pom[0], pom[1], pom[2], tr1, tr2, Pmin, h1, h2, tr3 };
+                                            if (pom[2] > pQ[2])
+                                                pQ = new double[] { pom[0], pom[1], pom[2], tr1, tr2, Pmin, h1, h2, tr3 };
+                                            if (pom[0] >= p2[0] && pom[1] >= p2[1])
+                                                p2 = new double[] { pom[0], pom[1], pom[2], tr1, tr2, Pmin, h1, h2, tr3 };
+                                            notOk = false;
+                                            //System.GC.Collect();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(" - Numer: " + count + " - " + ex.ToString());
+                                            MessageBox.Show(ex.ToString());
+                                            notOk = true;
+                                        }
+                                    }
+                                    //File.AppendAllText(fileName1, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}; {9}; {10}",
+                                    //   f1, f2, f3, tr1, h1, h2, h3, pom[0], pom[1], pom[2], pom[3]) + Environment.NewLine);
+                                }
+                }
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8};",
+                pCom[0], pCom[1], pCom[2], pCom[3], pCom[4], pCom[5], pCom[6], pCom[7], pCom[8]) + Environment.NewLine);
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8};",
+                pCor[0], pCor[1], pCor[2], pCor[3], pCor[4], pCor[5], pCor[6], pCor[7], pCor[8]) + Environment.NewLine);
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8};",
+                pQ[0], pQ[1], pQ[2], pQ[3], pQ[4], pQ[5], pQ[6], pQ[7], pQ[8]) + Environment.NewLine);
+                File.AppendAllText(fileName2, String.Format("{0}; {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8};",
+                p2[0], p2[1], p2[2], p2[3], p2[4], p2[5], p2[6], p2[7], p2[8]) + Environment.NewLine);
+            }
+            /*numericUpDown1.Value = param[0];
+            numericUpDown2.Value = param[1];
             numericUpDown3.Value = param[2];
             numericUpDown4.Value = param[3];
             numericUpDown5.Value = param[4];
+            if (index == 0) buttonSobel_Click(sender, e);
+            else buttonCanny_Click(sender, e);
             buttonHough_Click(sender, e);*/
-            ObrazSat.Reset();
         }
     }
 }
