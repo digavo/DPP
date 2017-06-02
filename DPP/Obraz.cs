@@ -13,6 +13,7 @@ using Emgu.CV.Features2D;
 using System.Linq;
 using BitMiracle.LibTiff.Classic;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace DPP
 {
@@ -569,26 +570,51 @@ namespace DPP
         }
         public Bitmap metodaPix(int minp, int maxp, int h1, int h2, int tr3)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             minPx = minp; maxPx = maxp;
             Image<Gray, byte> outImg;
             Image<Gray, byte> binary = edgesImg.Not().ThresholdBinary(new Gray(100), new Gray(255));
-            Image<Gray, float> dist = new Image<Gray, float>(binary.Size); //odległość euklidesowa
-
-            CvInvoke.DistanceTransform(binary, dist, null, DistType.L2, 5);
-            //CvInvoke.Normalize(dist, dist, 0, 255, NormType.MinMax); // do pokazywania !!!!
-            using (Bitmap newImg = new Bitmap(dist.Convert<Bgr, byte>().Bitmap))
+            Image<Gray, float> dist = new Image<Gray, float>(binary.Size);
+            CvInvoke.DistanceTransform(binary, dist, null, DistType.L2, 5);//odległość euklidesowa
+            int x2 = inImg.Width, y2 = inImg.Height;
+            int mSize = 3, mCenter = (mSize - 1) / 2;
+            #region piksele centralne
+            outImg = new Image<Gray, byte>(inImg.Size);
+            outImg.SetZero();
+            centralPixels = new List<Punkt>();
+            using (Image<Bgr, byte> dist2 = dist.Convert<Bgr, byte>()) // zmiana na Gray dużo zmienia w wyniku, dlaczego?
             {
-                Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
-                BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
-                int depth = Bitmap.GetPixelFormatSize(data.PixelFormat) / 8;
-                byte[] buffer = new byte[data.Width * data.Height * depth];
-                Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
-                Parallel.Invoke(
-                    () => { metodaPixWątek(buffer, 0, 0, data.Width, data.Height, data.Width, depth); });
-                Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
-                newImg.UnlockBits(data);
-                outImg = new Image<Gray, byte>(newImg);
+                for (int i = 0; i < y2; i++)
+                    for (int j = 0; j < x2; j++)
+                        if (dist2.Data[i, j, 0] < minPx) dist2.Data[i, j, 0] = 0;
+
+                for (int i = mCenter; i < y2 - mCenter; i++)
+                    for (int j = mCenter; j < x2 - mCenter; j++)
+                    {
+                        if (dist2.Data[i, j, 0] == 0) continue;
+                        List<int> pom2 = new List<int>();
+                        int m = dist2.Data[i, j, 0];
+
+                        int n = 1;
+                        for (int jj = j - mCenter; jj <= j + mCenter; jj++)
+                            for (int ii = i - mCenter; ii <= i + mCenter; ii++)
+                            {
+                                if (ii == i & jj == j) continue;
+                                if (dist2.Data[ii, jj, 0] > m) break;
+                                else n++;
+                            }
+                        if (n == 9 && m > minPx && m < maxPx)
+                        {
+                            centralPixels.Add(new Punkt(m, j, i));
+                            //dist[i, j] = m * 200; //dodać wyrzucanie pix?
+                            outImg.Data[i, j, 0] = 255;
+                        }
+                    }
             }
+            #endregion
+
             #region wykluczenie obszarów zieleni, i za ciemnych i za mocnych
             using (Image<Hsv, byte> hsv = inImg.Convert<Hsv, byte>())
             {
@@ -598,36 +624,70 @@ namespace DPP
                 linesImg = channels[1].Or(channels[2]).Not();
                 CvInvoke.Min(outImg, channels[1].Or(channels[2]).Not(), outImg);
             }
-            #endregion
-
             edgesImg = outImg.Clone();
+            #endregion
             endImg = edgesImg.Convert<Bgr, byte>();
 
-            //edgesImg i endImg - zawiera piksele centralne
             #region segmentacja
             foreach (var pkt in centralPixels)
-            {
                 if (((int)outImg.Data[pkt.y, pkt.x, 0]) != 0)
-                   CvInvoke.Circle(endImg, new Point(pkt.x, pkt.y), (int)Math.Floor(dist[new Point(pkt.x,pkt.y)].Intensity), new MCvScalar(255, 255, 255), -1);
-            }
-            // na obrazie we:
-            //using (Bitmap newImg = new Bitmap(inImg.Bitmap))
-            using (Bitmap newImg = new Bitmap(endImg.Bitmap))
-            {
-                Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
-                BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
-                int depth = Bitmap.GetPixelFormatSize(data.PixelFormat) / 8;
-                byte[] buffer = new byte[data.Width * data.Height * depth];
-                Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
-                Parallel.Invoke(
-                    () => { metodaPixSegmentacja(buffer, 0, 0, data.Width, data.Height, data.Width, depth); });
-                Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
-                newImg.UnlockBits(data);
-                endImg = new Image<Bgr, byte>(newImg);
+                    CvInvoke.Circle(endImg, new Point(pkt.x, pkt.y), (int)Math.Floor(dist[new Point(pkt.x, pkt.y)].Intensity), new MCvScalar(255, 255, 255), -1);
 
-            }
-            //edgesImg = binary.Clone().Not();
-            //return endImg.Bitmap;
+            #region operacje
+            parents = new List<int>();
+            parents.Add(0);
+            int[,] label = new int[x2, y2]; //etykiety, tab - białe obszary do podziału
+
+            int number = 1;
+            for (int j = 0; j < y2; j++)
+                for (int i = 0; i < x2; i++)
+                {
+                    if (endImg.Data[j, i, 0] == 0)  // czarny piksel
+                    {
+                        label[i, j] = 0;
+                        continue;
+                    }
+                    int min;
+                    // sąsiedzi, którzy już mają wartości:
+                    List<Punkt> s = new List<Punkt>();
+                    if (i - 1 >= 0) s.Add(new Punkt(label[i - 1, j], i - 1, j));
+                    if (j - 1 >= 0 && i - 1 >= 0) s.Add(new Punkt(label[i - 1, j - 1], i - 1, j - 1));
+                    if (j - 1 >= 0) s.Add(new Punkt(label[i, j - 1], i, j - 1));
+                    if (i + 1 < x2 && j - 1 >= 0) s.Add(new Punkt(label[i + 1, j - 1], i + 1, j - 1));
+
+                    if (s.Where(c => c.v == 0).Count() == s.Count()) // nie ma sąsiada z numerem = wszyscy sąsiedzi są czarni
+                    {
+                        parents.Add(number);
+                        label[i, j] = number;
+                        number++;
+                    }
+                    else
+                    {
+                        min = s.Where(c => c.v > 0).OrderBy(c => c.v).First().v;
+                        label[i, j] = min;
+                        foreach (var p in s)
+                        {
+                            if (p.v == 0) continue;
+                            //if (parents[p.v] == p.v) // ta etykieta nie ma jeszcze powiązania
+                            parents[p.v] = min;
+                            //else //ta etykieta należy już do innej grupy
+                            //Union(p.v, min);
+                        }
+                    }
+                }
+
+            for (int i = 1; i < parents.Count(); i++)
+                if (parents[i] != i)
+                    Find(i);
+
+            for (int j = 0; j < y2; j++)
+                for (int i = 0; i < x2; i++)
+                    if (label[i, j] != 0)
+                    {
+                        label[i, j] = parents[label[i, j]];
+                        endImg.Data[j, i, 0] = endImg.Data[j, i, 1] = endImg.Data[j, i, 2] = (byte)(label[i, j]);
+                    }
+            #endregion
 
             // przejście pikseli centralnych i sumowanie ich okręgów i ilości dla tych samych etykiet
             List<Punkt> segmenty = new List<Punkt>(); //v - numer etykiety, x - suma okręgów, y - liczba pikseli
@@ -653,54 +713,31 @@ namespace DPP
             foreach (var s in segmenty)
             {
                 double wyn = (double)s.y * (double)s.y / (double)s.x;
-                
+
                 if (wyn < tr3)
                     centralPixels.RemoveAll(c => c.v == s.v);
-                else Console.Write(" e " +s.v +", n "+s.y +", sum/n "+s.x/s.y+", w "+ wyn + "\n");
-                
+                //else Console.Write(" e " + s.v + ", n " + s.y + ", sum/n " + s.x / s.y + ", w " + wyn + "\n");
+
             }
             edgesImg.SetZero();
             endImg.SetZero();
-            foreach (var p in centralPixels)
-            {
+            foreach (var p in centralPixels) { 
                 edgesImg.Data[p.y, p.x, 0] = 255;
-                endImg.Data[p.y, p.x, 0] = 255;
-                endImg.Data[p.y, p.x, 1] = 255;
-                endImg.Data[p.y, p.x, 2] = 255;
+                endImg.Data[p.y, p.x, 0] = 255; endImg.Data[p.y, p.x, 1] = 255; endImg.Data[p.y, p.x, 2] = 255;
             }
-            #endregion
 
-            //edgesImg ma kropki, usuną te kropki, które są w regionach za małych
-            //endImg = inImg.Clone();
+            #endregion
 
             //----------linie--------------
-            lines = HoughLineTests(30, h1, h2); 
-
+            //endImg = inImg.Clone();
+            lines = HoughLineTests(30, h1, h2);
             ConnectLines(lines, 100);
-
             BoldLines(lines, dist);
-            
-            #region szkieletyzacja
-            /*binary = endImg.Convert<Gray, byte>();//edgesImg.Clone();
-            Image<Gray, Byte> eroded = new Image<Gray, byte>(InImg.Size);
-            Image<Gray, Byte> dilated = new Image<Gray, byte>(InImg.Size);
-            Image<Gray, Byte> skel = new Image<Gray, byte>(InImg.Size);
-            skel.SetValue(0);
-            bool done = false;
-            while (!done)
-            {
-                eroded = binary.Erode(1);
-                dilated = eroded.Dilate(1);
-                dilated = binary.Sub(dilated);
-                CvInvoke.BitwiseOr(skel,dilated,skel);
-                binary = eroded.Clone();
-                if (CvInvoke.CountNonZero(binary) == 0) done = true;
-            }
-            endImg = skel.Convert<Bgr,byte>();*/
-            #endregion
 
             edgesImg = binary.Clone().Not();
             binary.Dispose(); dist.Dispose(); outImg.Dispose();
+            stopwatch.Stop();
+            Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
             return endImg.Bitmap;
         }
 
@@ -719,22 +756,45 @@ namespace DPP
             minPx = minp; maxPx = maxp;
             Image<Gray, byte> outImg;
             Image<Gray, byte> binary = edgesImg.Not().ThresholdBinary(new Gray(100), new Gray(255));
-            Image<Gray, float> dist = new Image<Gray, float>(binary.Size); //odległość euklidesowa
-
-            CvInvoke.DistanceTransform(binary, dist, null, DistType.L2, 5);
-            using (Bitmap newImg = new Bitmap(dist.Convert<Bgr, byte>().Bitmap))
+            Image<Gray, float> dist = new Image<Gray, float>(binary.Size); 
+            CvInvoke.DistanceTransform(binary, dist, null, DistType.L2, 5);//odległość euklidesowa
+            int x2 = inImg.Width, y2 = inImg.Height;
+            int mSize = 3, mCenter = (mSize - 1) / 2;
+            #region piksele centralne
+            outImg = new Image<Gray, byte>(inImg.Size);
+            outImg.SetZero();
+            centralPixels = new List<Punkt>();
+            using (Image<Bgr, byte> dist2 = dist.Convert<Bgr, byte>()) // zmiana na Gray dużo zmienia w wyniku, dlaczego?
             {
-                Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
-                BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
-                int depth = Bitmap.GetPixelFormatSize(data.PixelFormat) / 8;
-                byte[] buffer = new byte[data.Width * data.Height * depth];
-                Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
-                Parallel.Invoke(
-                    () => { metodaPixWątek(buffer, 0, 0, data.Width, data.Height, data.Width, depth); });
-                Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
-                newImg.UnlockBits(data);
-                outImg = new Image<Gray, byte>(newImg);
+                for (int i = 0; i < y2; i++)
+                    for (int j = 0; j < x2; j++)
+                        if (dist2.Data[i, j, 0] < minPx) dist2.Data[i, j, 0] = 0;
+
+                for (int i = mCenter; i < y2 - mCenter; i++)
+                    for (int j = mCenter; j < x2 - mCenter; j++)
+                    {
+                        if (dist2.Data[i, j, 0] == 0) continue;
+                        List<int> pom2 = new List<int>();
+                        int m = dist2.Data[i, j, 0];
+
+                        int n = 1;
+                        for (int jj = j - mCenter; jj <= j + mCenter; jj++)
+                            for (int ii = i - mCenter; ii <= i + mCenter; ii++)
+                            {
+                                if (ii == i & jj == j) continue;
+                                if (dist2.Data[ii, jj, 0] > m) break;
+                                else n++;
+                            }
+                        if (n == 9 && m > minPx && m < maxPx)
+                        {
+                            centralPixels.Add(new Punkt(m, j, i));
+                            //dist[i, j] = m * 200; //dodać wyrzucanie pix?
+                            outImg.Data[i, j, 0] = 255;
+                        }
+                    }
             }
+            #endregion
+            
             #region wykluczenie obszarów zieleni, i za ciemnych i za mocnych
             using (Image<Hsv, byte> hsv = inImg.Convert<Hsv, byte>())
             {
@@ -751,25 +811,64 @@ namespace DPP
 
             #region segmentacja
             foreach (var pkt in centralPixels)
-            {
                 if (((int)outImg.Data[pkt.y, pkt.x, 0]) != 0)
                     CvInvoke.Circle(endImg, new Point(pkt.x, pkt.y), (int)Math.Floor(dist[new Point(pkt.x, pkt.y)].Intensity), new MCvScalar(255, 255, 255), -1);
-            }
+            
+            #region operacje
+            parents = new List<int>();
+            parents.Add(0);
+            int[,] label = new int[x2, y2]; //etykiety, tab - białe obszary do podziału
 
-            using (Bitmap newImg = new Bitmap(endImg.Bitmap))
-            {
-                Rectangle rect = new Rectangle(0, 0, newImg.Width, newImg.Height);
-                BitmapData data = newImg.LockBits(rect, ImageLockMode.ReadOnly, newImg.PixelFormat);
-                int depth = Bitmap.GetPixelFormatSize(data.PixelFormat) / 8;
-                byte[] buffer = new byte[data.Width * data.Height * depth];
-                Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
-                Parallel.Invoke(
-                    () => { metodaPixSegmentacja(buffer, 0, 0, data.Width, data.Height, data.Width, depth); });
-                Marshal.Copy(buffer, 0, data.Scan0, buffer.Length);
-                newImg.UnlockBits(data);
-                endImg = new Image<Bgr, byte>(newImg);
+            int number = 1;
+            for (int j = 0; j < y2; j++)
+                for (int i = 0; i < x2; i++)
+                {
+                    if (endImg.Data[j, i, 0] == 0)  // czarny piksel
+                    {
+                        label[i, j] = 0;
+                        continue;
+                    }
+                    int min;
+                    // sąsiedzi, którzy już mają wartości:
+                    List<Punkt> s = new List<Punkt>();
+                    if (i - 1 >= 0) s.Add(new Punkt(label[i - 1, j], i - 1, j));
+                    if (j - 1 >= 0 && i - 1 >= 0) s.Add(new Punkt(label[i - 1, j - 1], i - 1, j - 1));
+                    if (j - 1 >= 0) s.Add(new Punkt(label[i, j - 1], i, j - 1));
+                    if (i + 1 < x2 && j - 1 >= 0) s.Add(new Punkt(label[i + 1, j - 1], i + 1, j - 1));
 
-            }
+                    if (s.Where(c => c.v == 0).Count() == s.Count()) // nie ma sąsiada z numerem = wszyscy sąsiedzi są czarni
+                    {
+                        parents.Add(number);
+                        label[i, j] = number;
+                        number++;
+                    }
+                    else
+                    {
+                        min = s.Where(c => c.v > 0).OrderBy(c => c.v).First().v;
+                        label[i, j] = min;
+                        foreach (var p in s)
+                        {
+                            if (p.v == 0) continue;
+                            //if (parents[p.v] == p.v) // ta etykieta nie ma jeszcze powiązania
+                            parents[p.v] = min;
+                            //else //ta etykieta należy już do innej grupy
+                            //Union(p.v, min);
+                        }
+                    }
+                }
+
+            for (int i = 1; i < parents.Count(); i++)
+                if (parents[i] != i)
+                    Find(i);
+
+            for (int j = 0; j < y2; j++)
+                for (int i = 0; i < x2; i++)
+                    if (label[i, j] != 0)
+                    {
+                        label[i, j] = parents[label[i, j]];
+                        endImg.Data[j, i, 0] = endImg.Data[j, i, 1] = endImg.Data[j, i, 2] = (byte)(label[i, j]);
+                    }
+            #endregion
 
             // przejście pikseli centralnych i sumowanie ich okręgów i ilości dla tych samych etykiet
             List<Punkt> segmenty = new List<Punkt>(); //v - numer etykiety, x - suma okręgów, y - liczba pikseli
@@ -979,7 +1078,7 @@ namespace DPP
 
             foreach (var rec in boxList)
             {
-                //endImg.Draw(rec, new Bgr(Color.Red), 1);
+                endImg.Draw(rec, new Bgr(Color.Yellow), 0);
                 linesImg.Draw(rec, new Gray(255), 0);
                 //Console.WriteLine(boxList[0].Center+" " + boxList[0].Angle+" " + boxList[0].Size);
             }
@@ -998,16 +1097,9 @@ namespace DPP
             for (int i = 0; i < n; i++)
             {
                 LineSegment2D line = linesBold[i];
-                double p1 = dist[line.P1].Intensity, p2 = dist[line.P2].Intensity;
-                /*if (p1 > roadWidth * 2 || p2 > roadWidth * 2)
-                {
-                    lineWidth[i] = 0;
-                    continue;
-                }*/
-                lineWidth[i] = (int)((p1+p2)/2);
-                //Console.WriteLine(line.P1.X + " " + line.P1.Y + "; " + line.P2.X + " " + line.P2.Y+" ----------- "+lineWidth[i] + " (" + p1+", "+p2+") "+roadWidth);
+                double p1 = dist.Data[line.P1.Y, line.P1.X, 0], p2 = dist.Data[line.P2.Y, line.P2.X, 0];
+                lineWidth[i] = (int)Math.Ceiling((p1 + p2) / 2);
             }
-            
             linesImg.SetZero();
             for (int i = 0; i < n; i++)
             {
@@ -1023,8 +1115,8 @@ namespace DPP
             for (int i = 0; i < n; i++)
             {
                 LineSegment2D line = linesBold[i];
-                double p1 = dist[line.P1].Intensity, p2 = dist[line.P2].Intensity;
-                lineWidth[i] = (int)((p1 + p2) / 2);
+                double p1 = dist.Data[line.P1.Y, line.P1.X, 0], p2 = dist.Data[line.P2.Y, line.P2.X, 0];
+                lineWidth[i] = (int)Math.Ceiling((p1 + p2) / 2);
             }
             linesImg.SetZero();
             for (int i = 0; i < n; i++)

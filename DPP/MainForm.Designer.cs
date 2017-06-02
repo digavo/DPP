@@ -81,6 +81,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.numericUpDown16 = new System.Windows.Forms.NumericUpDown();
             this.numericUpDown15 = new System.Windows.Forms.NumericUpDown();
             this.label16 = new System.Windows.Forms.Label();
             this.label15 = new System.Windows.Forms.Label();
@@ -103,7 +104,6 @@
             this.button9 = new System.Windows.Forms.Button();
             this.toolTipMenu = new System.Windows.Forms.ToolTip(this.components);
             this.toolTipMenu2 = new System.Windows.Forms.ToolTip(this.components);
-            this.numericUpDown16 = new System.Windows.Forms.NumericUpDown();
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
@@ -129,13 +129,13 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
             this.tabPage4.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown16)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown15)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown14)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown12)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown13)).BeginInit();
             this.tabPage6.SuspendLayout();
             this.tabPage7.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown16)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox3
@@ -694,7 +694,7 @@
             this.numericUpDown2.Size = new System.Drawing.Size(55, 23);
             this.numericUpDown2.TabIndex = 9;
             this.numericUpDown2.Value = new decimal(new int[] {
-            120,
+            100,
             0,
             0,
             0});
@@ -716,7 +716,7 @@
             this.numericUpDown1.Size = new System.Drawing.Size(55, 23);
             this.numericUpDown1.TabIndex = 8;
             this.numericUpDown1.Value = new decimal(new int[] {
-            180,
+            50,
             0,
             0,
             0});
@@ -861,6 +861,18 @@
             this.tabPage4.Text = "Inne";
             this.tabPage4.UseVisualStyleBackColor = true;
             // 
+            // numericUpDown16
+            // 
+            this.numericUpDown16.Location = new System.Drawing.Point(291, 85);
+            this.numericUpDown16.Maximum = new decimal(new int[] {
+            100000,
+            0,
+            0,
+            0});
+            this.numericUpDown16.Name = "numericUpDown16";
+            this.numericUpDown16.Size = new System.Drawing.Size(55, 23);
+            this.numericUpDown16.TabIndex = 37;
+            // 
             // numericUpDown15
             // 
             this.numericUpDown15.Increment = new decimal(new int[] {
@@ -878,7 +890,7 @@
             this.numericUpDown15.Size = new System.Drawing.Size(55, 23);
             this.numericUpDown15.TabIndex = 35;
             this.numericUpDown15.Value = new decimal(new int[] {
-            6,
+            10,
             0,
             0,
             0});
@@ -918,7 +930,7 @@
             this.numericUpDown14.Size = new System.Drawing.Size(55, 23);
             this.numericUpDown14.TabIndex = 33;
             this.numericUpDown14.Value = new decimal(new int[] {
-            50,
+            10,
             0,
             0,
             0});
@@ -935,7 +947,7 @@
             this.numericUpDown12.Size = new System.Drawing.Size(55, 23);
             this.numericUpDown12.TabIndex = 32;
             this.numericUpDown12.Value = new decimal(new int[] {
-            15,
+            50,
             0,
             0,
             0});
@@ -1105,18 +1117,6 @@
             this.button9.UseVisualStyleBackColor = true;
             this.button9.Click += new System.EventHandler(this.button9_Click);
             // 
-            // numericUpDown16
-            // 
-            this.numericUpDown16.Location = new System.Drawing.Point(291, 85);
-            this.numericUpDown16.Maximum = new decimal(new int[] {
-            1000,
-            0,
-            0,
-            0});
-            this.numericUpDown16.Name = "numericUpDown16";
-            this.numericUpDown16.Size = new System.Drawing.Size(55, 23);
-            this.numericUpDown16.TabIndex = 37;
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -1159,6 +1159,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).EndInit();
             this.tabPage4.ResumeLayout(false);
             this.tabPage4.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown16)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown15)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown14)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown12)).EndInit();
@@ -1166,7 +1167,6 @@
             this.tabPage6.ResumeLayout(false);
             this.tabPage7.ResumeLayout(false);
             this.tabPage7.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown16)).EndInit();
             this.ResumeLayout(false);
 
         }
